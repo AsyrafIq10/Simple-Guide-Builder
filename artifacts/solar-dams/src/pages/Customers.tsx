@@ -1,15 +1,37 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
-import { useListCustomers, createCustomer, getListCustomersQueryKey } from "@workspace/api-client-react";
+import {
+  useListCustomers, createCustomer, updateCustomer, deleteCustomer,
+  getListCustomersQueryKey, ListCustomersQueryResult,
+} from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, Search, Building2, User } from "lucide-react";
+import { Users, Plus, Search, Building2, User, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
 
+type Customer = ListCustomersQueryResult[number];
+
+const BLANK_FORM = {
+  name: "", email: "", phone: "", customerType: "commercial" as const,
+  identityOrRegistrationNumber: "", billingAddress: "", serviceAddress: "",
+};
+
 export default function Customers() {
   const { data: customers, isLoading } = useListCustomers();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [isSheetOpen, setSheetOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<Customer | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteCustomer(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() }),
+  });
+
+  const handleDelete = (c: Customer) => {
+    if (!window.confirm(`Delete customer "${c.name}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(c.id);
+  };
 
   const filtered = customers?.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -24,7 +46,7 @@ export default function Customers() {
           <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage asset owners and portfolio clients.</p>
         </div>
-        <Button onClick={() => setSheetOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus className="size-4 mr-2" /> New Customer
         </Button>
       </div>
@@ -48,7 +70,7 @@ export default function Customers() {
             <Users className="size-12 text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-medium">No customers found</h3>
             <p className="text-sm text-muted-foreground mt-1 mb-4">Get started by creating your first client.</p>
-            <Button onClick={() => setSheetOpen(true)} variant="outline">Create Customer</Button>
+            <Button onClick={() => setCreateOpen(true)} variant="outline">Create Customer</Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -81,9 +103,26 @@ export default function Customers() {
                       <div className="text-muted-foreground text-xs mt-0.5">{customer.phone || 'No phone'}</div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link href={`/customers/${customer.id}`}>
-                        <Button variant="ghost" size="sm" className="text-xs font-medium text-primary">View details</Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/customers/${customer.id}`}>
+                          <Button variant="ghost" size="sm" className="text-xs font-medium text-primary">View</Button>
+                        </Link>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                          onClick={() => setEditing(customer)}
+                        >
+                          <Pencil className="size-3.5 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(customer)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="size-3.5 mr-1" /> Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -93,24 +132,63 @@ export default function Customers() {
         )}
       </div>
 
-      <CreateCustomerSheet open={isSheetOpen} onClose={() => setSheetOpen(false)} />
+      <CustomerSheet mode="create" open={createOpen} onClose={() => setCreateOpen(false)} />
+      {editing && (
+        <CustomerSheet mode="edit" open={!!editing} onClose={() => setEditing(null)} customer={editing} />
+      )}
     </div>
   );
 }
 
-function CreateCustomerSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CustomerSheet(
+  props:
+    | { mode: "create"; open: boolean; onClose: () => void }
+    | { mode: "edit"; open: boolean; onClose: () => void; customer: Customer }
+) {
   const queryClient = useQueryClient();
+
+  const initialForm = props.mode === "edit"
+    ? {
+        name: props.customer.name,
+        email: props.customer.email,
+        phone: props.customer.phone || "",
+        customerType: props.customer.customerType as typeof BLANK_FORM["customerType"],
+        identityOrRegistrationNumber: props.customer.identityOrRegistrationNumber || "",
+        billingAddress: props.customer.billingAddress || "",
+        serviceAddress: props.customer.serviceAddress || "",
+      }
+    : BLANK_FORM;
+
+  const [formData, setFormData] = useState(initialForm);
+
+  // Reset form when customer changes
+  React.useEffect(() => {
+    if (props.mode === "edit") {
+      setFormData({
+        name: props.customer.name,
+        email: props.customer.email,
+        phone: props.customer.phone || "",
+        customerType: props.customer.customerType as typeof BLANK_FORM["customerType"],
+        identityOrRegistrationNumber: props.customer.identityOrRegistrationNumber || "",
+        billingAddress: props.customer.billingAddress || "",
+        serviceAddress: props.customer.serviceAddress || "",
+      });
+    } else {
+      setFormData(BLANK_FORM);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.mode === "edit" ? props.customer.id : null]);
+
   const mutation = useMutation({
-    mutationFn: (data: Parameters<typeof createCustomer>[0]) => createCustomer(data),
+    mutationFn: (data: typeof BLANK_FORM) =>
+      props.mode === "create"
+        ? createCustomer(data)
+        : updateCustomer((props as any).customer.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
-      onClose();
-      setFormData({ name: "", email: "", phone: "", customerType: "commercial", identityOrRegistrationNumber: "", billingAddress: "", serviceAddress: "" });
+      props.onClose();
+      if (props.mode === "create") setFormData(BLANK_FORM);
     },
-  });
-  const [formData, setFormData] = useState({
-    name: "", email: "", phone: "", customerType: "commercial" as const,
-    identityOrRegistrationNumber: "", billingAddress: "", serviceAddress: "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
@@ -118,8 +196,13 @@ function CreateCustomerSheet({ open, onClose }: { open: boolean; onClose: () => 
     mutation.mutate(formData);
   };
 
+  const title = props.mode === "create" ? "New Customer" : `Edit — ${(props as any).customer.name}`;
+  const submitLabel = props.mode === "create"
+    ? (mutation.isPending ? "Creating..." : "Save Customer")
+    : (mutation.isPending ? "Saving..." : "Save Changes");
+
   return (
-    <SideSheet open={open} onClose={onClose} title="New Customer">
+    <SideSheet open={props.open} onClose={props.onClose} title={title}>
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">Customer Type</label>
@@ -159,11 +242,14 @@ function CreateCustomerSheet({ open, onClose }: { open: boolean; onClose: () => 
           <textarea className="w-full p-3 rounded-md border border-input bg-background text-sm outline-none min-h-[80px]"
             value={formData.billingAddress} onChange={e => setFormData({ ...formData, billingAddress: e.target.value })} />
         </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Service Address</label>
+          <textarea className="w-full p-3 rounded-md border border-input bg-background text-sm outline-none min-h-[80px]"
+            value={formData.serviceAddress} onChange={e => setFormData({ ...formData, serviceAddress: e.target.value })} />
+        </div>
         <div className="pt-4 flex gap-2 justify-end">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Creating..." : "Save Customer"}
-          </Button>
+          <Button type="button" variant="outline" onClick={props.onClose}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending}>{submitLabel}</Button>
         </div>
       </form>
     </SideSheet>

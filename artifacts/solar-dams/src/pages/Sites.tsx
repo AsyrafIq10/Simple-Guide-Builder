@@ -1,16 +1,41 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
-import { useListSites, useListCustomers, createSite, getListSitesQueryKey } from "@workspace/api-client-react";
+import {
+  useListSites, useListCustomers, createSite, updateSite, deleteSite,
+  getListSitesQueryKey, ListSitesQueryResult, ListCustomersQueryResult,
+} from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MapPin, Plus, Search } from "lucide-react";
+import { MapPin, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
+
+type Site = ListSitesQueryResult[number];
+type Customer = ListCustomersQueryResult[number];
+
+const BLANK_FORM = {
+  siteName: "", siteCode: "", address: "",
+  siteType: "commercial" as const,
+  status: "active" as const,
+  customerId: "",
+};
 
 export default function Sites() {
   const { data: sites, isLoading } = useListSites();
   const { data: customers } = useListCustomers();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [isSheetOpen, setSheetOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<Site | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteSite(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() }),
+  });
+
+  const handleDelete = (s: Site) => {
+    if (!window.confirm(`Delete site "${s.siteName}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(s.id);
+  };
 
   const filtered = sites?.filter(s =>
     s.siteName.toLowerCase().includes(search.toLowerCase()) ||
@@ -24,7 +49,7 @@ export default function Sites() {
           <h1 className="text-3xl font-bold tracking-tight">Sites</h1>
           <p className="text-muted-foreground text-sm mt-1">Physical locations of deployed solar assets.</p>
         </div>
-        <Button onClick={() => setSheetOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus className="size-4 mr-2" /> New Site
         </Button>
       </div>
@@ -47,7 +72,7 @@ export default function Sites() {
           <div className="p-12 text-center flex flex-col items-center">
             <MapPin className="size-12 text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-medium">No sites found</h3>
-            <Button onClick={() => setSheetOpen(true)} variant="outline" className="mt-4">Create Site</Button>
+            <Button onClick={() => setCreateOpen(true)} variant="outline" className="mt-4">Create Site</Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -86,9 +111,26 @@ export default function Sites() {
                       <div className="text-muted-foreground text-xs line-clamp-1 max-w-[200px]">{site.address}</div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link href={`/sites/${site.id}`}>
-                        <Button variant="ghost" size="sm" className="text-xs font-medium text-primary">View</Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/sites/${site.id}`}>
+                          <Button variant="ghost" size="sm" className="text-xs font-medium text-primary">View</Button>
+                        </Link>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                          onClick={() => setEditing(site)}
+                        >
+                          <Pencil className="size-3.5 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(site)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="size-3.5 mr-1" /> Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -98,32 +140,76 @@ export default function Sites() {
         )}
       </div>
 
-      <CreateSiteSheet open={isSheetOpen} onClose={() => setSheetOpen(false)} customers={customers || []} />
+      <SiteSheet mode="create" open={createOpen} onClose={() => setCreateOpen(false)} customers={(customers as Customer[]) || []} />
+      {editing && (
+        <SiteSheet mode="edit" open={!!editing} onClose={() => setEditing(null)} customers={(customers as Customer[]) || []} site={editing} />
+      )}
     </div>
   );
 }
 
-function CreateSiteSheet({ open, onClose, customers }: { open: boolean; onClose: () => void; customers: any[] }) {
+function SiteSheet(
+  props:
+    | { mode: "create"; open: boolean; onClose: () => void; customers: Customer[] }
+    | { mode: "edit"; open: boolean; onClose: () => void; customers: Customer[]; site: Site }
+) {
   const queryClient = useQueryClient();
+
+  const initialForm = props.mode === "edit"
+    ? {
+        siteName: props.site.siteName,
+        siteCode: props.site.siteCode,
+        address: props.site.address,
+        siteType: props.site.siteType as typeof BLANK_FORM["siteType"],
+        status: props.site.status as typeof BLANK_FORM["status"],
+        customerId: props.site.customerId ? String(props.site.customerId) : "",
+      }
+    : BLANK_FORM;
+
+  const [formData, setFormData] = useState(initialForm);
+
+  React.useEffect(() => {
+    if (props.mode === "edit") {
+      setFormData({
+        siteName: props.site.siteName,
+        siteCode: props.site.siteCode,
+        address: props.site.address,
+        siteType: props.site.siteType as typeof BLANK_FORM["siteType"],
+        status: props.site.status as typeof BLANK_FORM["status"],
+        customerId: props.site.customerId ? String(props.site.customerId) : "",
+      });
+    } else {
+      setFormData(BLANK_FORM);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.mode === "edit" ? props.site.id : null]);
+
   const mutation = useMutation({
-    mutationFn: (data: any) => createSite(data),
+    mutationFn: (data: typeof formData) => {
+      const payload = { ...data, customerId: data.customerId ? Number(data.customerId) : undefined };
+      return props.mode === "create"
+        ? createSite(payload)
+        : updateSite((props as any).site.id, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
-      onClose();
+      props.onClose();
+      if (props.mode === "create") setFormData(BLANK_FORM);
     },
-  });
-  const [formData, setFormData] = useState({
-    siteName: "", siteCode: "", address: "", siteType: "commercial" as const,
-    status: "active" as const, customerId: "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate({ ...formData, customerId: formData.customerId ? Number(formData.customerId) : undefined });
+    mutation.mutate(formData);
   };
 
+  const title = props.mode === "create" ? "New Site" : `Edit — ${(props as any).site.siteName}`;
+  const submitLabel = props.mode === "create"
+    ? (mutation.isPending ? "Creating..." : "Save Site")
+    : (mutation.isPending ? "Saving..." : "Save Changes");
+
   return (
-    <SideSheet open={open} onClose={onClose} title="New Site">
+    <SideSheet open={props.open} onClose={props.onClose} title={title}>
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">Customer (Owner)</label>
@@ -132,7 +218,7 @@ function CreateSiteSheet({ open, onClose, customers }: { open: boolean; onClose:
             value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })}
           >
             <option value="">No customer linked</option>
-            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {props.customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -178,8 +264,8 @@ function CreateSiteSheet({ open, onClose, customers }: { open: boolean; onClose:
             value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
         </div>
         <div className="pt-4 flex gap-2 justify-end">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={mutation.isPending}>Save Site</Button>
+          <Button type="button" variant="outline" onClick={props.onClose}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending}>{submitLabel}</Button>
         </div>
       </form>
     </SideSheet>
