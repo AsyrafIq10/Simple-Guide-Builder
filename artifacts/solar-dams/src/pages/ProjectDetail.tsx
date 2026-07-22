@@ -1,22 +1,22 @@
 import React, { useState } from "react";
 import { useParams, Link } from "wouter";
-import { 
-  useGetDeveloperProject, useGetDeveloperProjectSummary, 
-  useListHousingUnits, useCreateHousingUnit, useUpdateDeveloperProject 
+import {
+  useGetDeveloperProject, useGetDeveloperProjectSummary,
+  useListHousingUnits, createHousingUnit, updateDeveloperProject,
+  getGetDeveloperProjectQueryKey, getGetDeveloperProjectSummaryQueryKey, getListHousingUnitsQueryKey,
 } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Home, ArrowLeft, Plus, Search, Edit, CheckCircle2, CircleDashed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetDeveloperProjectQueryKey, getListHousingUnitsQueryKey } from "@workspace/api-client-react";
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const projectId = Number(id);
   const { data: project, isLoading: projLoading } = useGetDeveloperProject(projectId, { query: { enabled: !!projectId, queryKey: getGetDeveloperProjectQueryKey(projectId) } });
-  const { data: summary } = useGetDeveloperProjectSummary(projectId, { query: { enabled: !!projectId } });
+  const { data: summary } = useGetDeveloperProjectSummary(projectId, { query: { enabled: !!projectId, queryKey: getGetDeveloperProjectSummaryQueryKey(projectId) } });
   const { data: units, isLoading: unitsLoading } = useListHousingUnits(projectId, { query: { enabled: !!projectId, queryKey: getListHousingUnitsQueryKey(projectId) } });
-  
+
   const [search, setSearch] = useState("");
   const [isUnitSheetOpen, setUnitSheetOpen] = useState(false);
   const [isEditOpen, setEditOpen] = useState(false);
@@ -24,8 +24,8 @@ export default function ProjectDetail() {
   if (projLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading...</div>;
   if (!project) return <div className="p-8 text-destructive font-bold">Project not found.</div>;
 
-  const filtered = units?.filter(u => 
-    u.unitNumber.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = units?.filter(u =>
+    u.unitNumber.toLowerCase().includes(search.toLowerCase()) ||
     (u.purchaserName && u.purchaserName.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -49,8 +49,8 @@ export default function ProjectDetail() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight">{project.projectName}</h1>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border
-                ${project.status === 'in_progress' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 
-                  project.status === 'completed' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' : 
+                ${project.status === 'in_progress' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' :
+                  project.status === 'completed' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
                   'bg-muted text-muted-foreground border-border'}
               `}>
                 {project.status.replace('_', ' ')}
@@ -85,10 +85,10 @@ export default function ProjectDetail() {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="flex items-center border border-border bg-background rounded-md px-3 py-1.5 w-full sm:w-64">
               <Search className="size-4 text-muted-foreground mr-2" />
-              <input 
-                type="text" 
-                className="bg-transparent border-none outline-none flex-1 text-sm" 
-                placeholder="Search unit or purchaser..." 
+              <input
+                type="text"
+                className="bg-transparent border-none outline-none flex-1 text-sm"
+                placeholder="Search unit or purchaser..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -98,7 +98,7 @@ export default function ProjectDetail() {
             </Button>
           </div>
         </div>
-        
+
         <div className="p-0">
           {unitsLoading ? (
             <div className="p-12 text-center text-muted-foreground animate-pulse">Loading units...</div>
@@ -125,7 +125,7 @@ export default function ProjectDetail() {
                     <tr key={unit.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-bold">{unit.unitNumber}</td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {unit.phase ? `P${unit.phase}` : ''} {unit.block ? `B${unit.block}` : ''}
+                        {unit.phase ? `P${unit.phase}` : ''}{unit.block ? ` B${unit.block}` : ''}
                         {!unit.phase && !unit.block && '-'}
                       </td>
                       <td className="px-4 py-3">
@@ -159,7 +159,7 @@ export default function ProjectDetail() {
   );
 }
 
-function StatCard({ label, value, color = "text-foreground" }: { label: string, value: number, color?: string }) {
+function StatCard({ label, value, color = "text-foreground" }: { label: string; value: number; color?: string }) {
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col justify-center text-center">
       <div className={`text-3xl font-bold ${color}`}>{value}</div>
@@ -169,21 +169,18 @@ function StatCard({ label, value, color = "text-foreground" }: { label: string, 
 }
 
 function PipelineStatus({ status }: { status: string }) {
-  // Simplified pipeline view based on status progress
   const statuses = [
-    'not_started', 'design_confirmed', 'equipment_allocated', 
+    'not_started', 'design_confirmed', 'equipment_allocated',
     'installation_in_progress', 'installation_completed', 'testing_completed',
     'utility_submission_pending', 'utility_submission_submitted', 'utility_approval_received',
-    'meter_installed', 'commissioned', 'handover_pending', 'handed_over', 'under_warranty', 'closed'
+    'meter_installed', 'commissioned', 'handover_pending', 'handed_over', 'under_warranty', 'closed',
   ];
   const idx = statuses.indexOf(status);
-  
-  // Categorize into 4 main stages for visual simplicity
   const stages = [
     { label: "Prep", active: idx >= 1, current: idx >= 0 && idx < 3 },
     { label: "Install", active: idx >= 4, current: idx >= 3 && idx < 6 },
     { label: "Utility", active: idx >= 8, current: idx >= 6 && idx < 10 },
-    { label: "Done", active: idx >= 12, current: idx >= 10 }
+    { label: "Done", active: idx >= 12, current: idx >= 10 },
   ];
 
   return (
@@ -191,38 +188,41 @@ function PipelineStatus({ status }: { status: string }) {
       {stages.map((stage, i) => (
         <div key={i} className="flex flex-col items-center gap-1 w-10">
           {stage.active ? (
-             <CheckCircle2 className="size-4 text-teal-500" />
+            <CheckCircle2 className="size-4 text-teal-500" />
           ) : stage.current ? (
-             <CircleDashed className="size-4 text-primary animate-pulse" />
+            <CircleDashed className="size-4 text-primary animate-pulse" />
           ) : (
-             <div className="size-4 rounded-full border-2 border-muted" />
+            <div className="size-4 rounded-full border-2 border-muted" />
           )}
           <span className="text-[9px] uppercase font-semibold text-muted-foreground">{stage.label}</span>
         </div>
       ))}
-      <div className="ml-2 pl-2 border-l border-border min-w-[100px] text-xs font-medium truncate capitalize">
+      <div className="ml-2 pl-2 border-l border-border min-w-[90px] text-xs font-medium truncate capitalize">
         {status.replace(/_/g, ' ')}
       </div>
     </div>
   );
 }
 
-function CreateUnitSheet({ projectId, open, onClose }: { projectId: number, open: boolean, onClose: () => void }) {
+function CreateUnitSheet({ projectId, open, onClose }: { projectId: number; open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const createUnit = useCreateHousingUnit({ projectId });
+  const mutation = useMutation({
+    mutationFn: (data: any) => createHousingUnit(projectId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListHousingUnitsQueryKey(projectId) });
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
-    unitNumber: "", block: "", phase: "", purchaserName: "", pvCapacityKwp: "", unitStatus: "not_started" as const
+    unitNumber: "", block: "", phase: "", purchaserName: "",
+    pvCapacityKwp: "", unitStatus: "not_started" as const,
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createUnit.mutate({ 
-      data: { ...formData, pvCapacityKwp: formData.pvCapacityKwp ? Number(formData.pvCapacityKwp) : undefined } 
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListHousingUnitsQueryKey(projectId) });
-        onClose();
-      }
+    mutation.mutate({
+      ...formData,
+      pvCapacityKwp: formData.pvCapacityKwp ? Number(formData.pvCapacityKwp) : undefined,
     });
   };
 
@@ -232,55 +232,59 @@ function CreateUnitSheet({ projectId, open, onClose }: { projectId: number, open
         <div className="space-y-2">
           <label className="text-sm font-medium">Unit Number <span className="text-red-500">*</span></label>
           <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.unitNumber} onChange={e => setFormData({...formData, unitNumber: e.target.value})} />
+            value={formData.unitNumber} onChange={e => setFormData({ ...formData, unitNumber: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Phase</label>
             <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.phase} onChange={e => setFormData({...formData, phase: e.target.value})} />
+              value={formData.phase} onChange={e => setFormData({ ...formData, phase: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Block</label>
             <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.block} onChange={e => setFormData({...formData, block: e.target.value})} />
+              value={formData.block} onChange={e => setFormData({ ...formData, block: e.target.value })} />
           </div>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Purchaser Name</label>
           <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.purchaserName} onChange={e => setFormData({...formData, purchaserName: e.target.value})} />
+            value={formData.purchaserName} onChange={e => setFormData({ ...formData, purchaserName: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">PV Capacity (kWp)</label>
           <input type="number" step="0.01" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.pvCapacityKwp} onChange={e => setFormData({...formData, pvCapacityKwp: e.target.value})} />
+            value={formData.pvCapacityKwp} onChange={e => setFormData({ ...formData, pvCapacityKwp: e.target.value })} />
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={createUnit.isPending}>Add Unit</Button>
+          <Button type="submit" disabled={mutation.isPending}>Add Unit</Button>
         </div>
       </form>
     </SideSheet>
   );
 }
 
-function EditProjectSheet({ project, open, onClose }: { project: any, open: boolean, onClose: () => void }) {
+function EditProjectSheet({ project, open, onClose }: { project: any; open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const updateProject = useUpdateDeveloperProject({ projectId: project.id });
+  const mutation = useMutation({
+    mutationFn: (data: any) => updateDeveloperProject(project.id, data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(getGetDeveloperProjectQueryKey(project.id), updated);
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
-    projectName: project.projectName, projectCode: project.projectCode, developerName: project.developerName, 
-    location: project.location || "", status: project.status
+    projectName: project.projectName,
+    projectCode: project.projectCode,
+    developerName: project.developerName,
+    location: project.location || "",
+    status: project.status,
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProject.mutate({ data: formData }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetDeveloperProjectQueryKey(project.id) });
-        onClose();
-      }
-    });
+    mutation.mutate(formData);
   };
 
   return (
@@ -289,12 +293,12 @@ function EditProjectSheet({ project, open, onClose }: { project: any, open: bool
         <div className="space-y-2">
           <label className="text-sm font-medium">Project Name</label>
           <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.projectName} onChange={e => setFormData({...formData, projectName: e.target.value})} />
+            value={formData.projectName} onChange={e => setFormData({ ...formData, projectName: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
           <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}
+            value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}
           >
             <option value="planning">Planning</option>
             <option value="in_progress">In Progress</option>
@@ -304,7 +308,7 @@ function EditProjectSheet({ project, open, onClose }: { project: any, open: bool
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={updateProject.isPending}>Save Changes</Button>
+          <Button type="submit" disabled={mutation.isPending}>Save Changes</Button>
         </div>
       </form>
     </SideSheet>

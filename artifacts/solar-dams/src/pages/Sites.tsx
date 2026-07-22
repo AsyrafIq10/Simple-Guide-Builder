@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
-import { useListSites, useCreateSite, useListCustomers } from "@workspace/api-client-react";
-import { MapPin, Plus, Search, Navigation } from "lucide-react";
+import { useListSites, useListCustomers, createSite, getListSitesQueryKey } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MapPin, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
-import { useQueryClient } from "@tanstack/react-query";
-import { getListSitesQueryKey } from "@workspace/api-client-react";
 
 export default function Sites() {
   const { data: sites, isLoading } = useListSites();
@@ -13,8 +12,8 @@ export default function Sites() {
   const [search, setSearch] = useState("");
   const [isSheetOpen, setSheetOpen] = useState(false);
 
-  const filtered = sites?.filter(s => 
-    s.siteName.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = sites?.filter(s =>
+    s.siteName.toLowerCase().includes(search.toLowerCase()) ||
     s.siteCode.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -32,10 +31,10 @@ export default function Sites() {
 
       <div className="flex items-center border border-border bg-card rounded-md px-3 py-2 w-full max-w-sm">
         <Search className="size-4 text-muted-foreground mr-2" />
-        <input 
-          type="text" 
-          className="bg-transparent border-none outline-none flex-1 text-sm" 
-          placeholder="Search sites by name or code..." 
+        <input
+          type="text"
+          className="bg-transparent border-none outline-none flex-1 text-sm"
+          placeholder="Search sites by name or code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -76,8 +75,8 @@ export default function Sites() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border
-                        ${site.status === 'active' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' : 
-                          site.status === 'under_construction' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 
+                        ${site.status === 'active' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
+                          site.status === 'under_construction' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
                           'bg-muted text-muted-foreground border-border'}
                       `}>
                         {site.status.replace('_', ' ')}
@@ -104,21 +103,23 @@ export default function Sites() {
   );
 }
 
-function CreateSiteSheet({ open, onClose, customers }: { open: boolean, onClose: () => void, customers: any[] }) {
+function CreateSiteSheet({ open, onClose, customers }: { open: boolean; onClose: () => void; customers: any[] }) {
   const queryClient = useQueryClient();
-  const createSite = useCreateSite();
+  const mutation = useMutation({
+    mutationFn: (data: any) => createSite(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
-    siteName: "", siteCode: "", address: "", siteType: "commercial" as const, status: "active" as const, customerId: ""
+    siteName: "", siteCode: "", address: "", siteType: "commercial" as const,
+    status: "active" as const, customerId: "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createSite.mutate({ data: { ...formData, customerId: formData.customerId ? Number(formData.customerId) : undefined } }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
-        onClose();
-      }
-    });
+    mutation.mutate({ ...formData, customerId: formData.customerId ? Number(formData.customerId) : undefined });
   };
 
   return (
@@ -126,9 +127,9 @@ function CreateSiteSheet({ open, onClose, customers }: { open: boolean, onClose:
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">Customer (Owner)</label>
-          <select 
+          <select
             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.customerId} onChange={e => setFormData({...formData, customerId: e.target.value})}
+            value={formData.customerId} onChange={e => setFormData({ ...formData, customerId: e.target.value })}
           >
             <option value="">No customer linked</option>
             {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -138,19 +139,19 @@ function CreateSiteSheet({ open, onClose, customers }: { open: boolean, onClose:
           <div className="space-y-2">
             <label className="text-sm font-medium">Site Name</label>
             <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.siteName} onChange={e => setFormData({...formData, siteName: e.target.value})} />
+              value={formData.siteName} onChange={e => setFormData({ ...formData, siteName: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Site Code</label>
             <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono uppercase outline-none"
-              value={formData.siteCode} onChange={e => setFormData({...formData, siteCode: e.target.value.toUpperCase()})} />
+              value={formData.siteCode} onChange={e => setFormData({ ...formData, siteCode: e.target.value.toUpperCase() })} />
           </div>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Site Type</label>
-          <select 
+          <select
             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.siteType} onChange={e => setFormData({...formData, siteType: e.target.value as any})}
+            value={formData.siteType} onChange={e => setFormData({ ...formData, siteType: e.target.value as any })}
           >
             <option value="commercial">Commercial</option>
             <option value="residential">Residential</option>
@@ -161,9 +162,9 @@ function CreateSiteSheet({ open, onClose, customers }: { open: boolean, onClose:
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
-          <select 
+          <select
             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}
+            value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}
           >
             <option value="active">Active</option>
             <option value="under_construction">Under Construction</option>
@@ -174,11 +175,11 @@ function CreateSiteSheet({ open, onClose, customers }: { open: boolean, onClose:
         <div className="space-y-2">
           <label className="text-sm font-medium">Address</label>
           <textarea required className="w-full p-3 rounded-md border border-input bg-background text-sm min-h-[80px] outline-none"
-            value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+            value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={createSite.isPending}>Save Site</Button>
+          <Button type="submit" disabled={mutation.isPending}>Save Site</Button>
         </div>
       </form>
     </SideSheet>

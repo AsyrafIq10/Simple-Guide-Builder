@@ -1,19 +1,18 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
-import { useListDeveloperProjects, useCreateDeveloperProject } from "@workspace/api-client-react";
+import { useListDeveloperProjects, createDeveloperProject, getListDeveloperProjectsQueryKey } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Home, Plus, Search, MapPin, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
-import { useQueryClient } from "@tanstack/react-query";
-import { getListDeveloperProjectsQueryKey } from "@workspace/api-client-react";
 
 export default function DeveloperProjects() {
   const { data: projects, isLoading } = useListDeveloperProjects();
   const [search, setSearch] = useState("");
   const [isSheetOpen, setSheetOpen] = useState(false);
 
-  const filtered = projects?.filter(p => 
-    p.projectName.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = projects?.filter(p =>
+    p.projectName.toLowerCase().includes(search.toLowerCase()) ||
     p.developerName.toLowerCase().includes(search.toLowerCase()) ||
     p.projectCode.toLowerCase().includes(search.toLowerCase())
   );
@@ -32,10 +31,10 @@ export default function DeveloperProjects() {
 
       <div className="flex items-center border border-border bg-card rounded-md px-3 py-2 w-full max-w-sm">
         <Search className="size-4 text-muted-foreground mr-2" />
-        <input 
-          type="text" 
-          className="bg-transparent border-none outline-none flex-1 text-sm" 
-          placeholder="Search projects..." 
+        <input
+          type="text"
+          className="bg-transparent border-none outline-none flex-1 text-sm"
+          placeholder="Search projects..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -60,14 +59,14 @@ export default function DeveloperProjects() {
                     <div className="text-xs text-muted-foreground font-mono mt-1">{project.projectCode}</div>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap
-                    ${project.status === 'in_progress' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 
-                      project.status === 'completed' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' : 
+                    ${project.status === 'in_progress' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' :
+                      project.status === 'completed' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
                       'bg-muted text-muted-foreground border-border'}
                   `}>
                     {project.status.replace('_', ' ')}
                   </span>
                 </div>
-                
+
                 <div className="space-y-3 mt-auto pt-4 border-t border-border/50">
                   <div className="flex items-center gap-2 text-sm">
                     <Home className="size-4 text-muted-foreground" />
@@ -95,23 +94,23 @@ export default function DeveloperProjects() {
   );
 }
 
-function CreateProjectSheet({ open, onClose }: { open: boolean, onClose: () => void }) {
+function CreateProjectSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const createProject = useCreateDeveloperProject();
+  const mutation = useMutation({
+    mutationFn: (data: any) => createDeveloperProject(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListDeveloperProjectsQueryKey() });
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
-    projectName: "", projectCode: "", developerName: "", location: "", totalUnits: "", status: "planning" as const
+    projectName: "", projectCode: "", developerName: "",
+    location: "", totalUnits: "", status: "planning" as const,
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createProject.mutate({ 
-      data: { ...formData, totalUnits: formData.totalUnits ? Number(formData.totalUnits) : undefined } 
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListDeveloperProjectsQueryKey() });
-        onClose();
-      }
-    });
+    mutation.mutate({ ...formData, totalUnits: formData.totalUnits ? Number(formData.totalUnits) : undefined });
   };
 
   return (
@@ -120,34 +119,34 @@ function CreateProjectSheet({ open, onClose }: { open: boolean, onClose: () => v
         <div className="space-y-2">
           <label className="text-sm font-medium">Project Name <span className="text-red-500">*</span></label>
           <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.projectName} onChange={e => setFormData({...formData, projectName: e.target.value})} />
+            value={formData.projectName} onChange={e => setFormData({ ...formData, projectName: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Project Code <span className="text-red-500">*</span></label>
             <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono outline-none"
-              value={formData.projectCode} onChange={e => setFormData({...formData, projectCode: e.target.value})} />
+              value={formData.projectCode} onChange={e => setFormData({ ...formData, projectCode: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Total Units</label>
             <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.totalUnits} onChange={e => setFormData({...formData, totalUnits: e.target.value})} />
+              value={formData.totalUnits} onChange={e => setFormData({ ...formData, totalUnits: e.target.value })} />
           </div>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Developer Company <span className="text-red-500">*</span></label>
           <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.developerName} onChange={e => setFormData({...formData, developerName: e.target.value})} />
+            value={formData.developerName} onChange={e => setFormData({ ...formData, developerName: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Location</label>
           <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+            value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
           <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}
+            value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}
           >
             <option value="planning">Planning</option>
             <option value="in_progress">In Progress</option>
@@ -157,7 +156,7 @@ function CreateProjectSheet({ open, onClose }: { open: boolean, onClose: () => v
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={createProject.isPending}>Create Project</Button>
+          <Button type="submit" disabled={mutation.isPending}>Create Project</Button>
         </div>
       </form>
     </SideSheet>

@@ -1,17 +1,16 @@
 import React, { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useGetCustomer, useUpdateCustomer, useListSites } from "@workspace/api-client-react";
+import { useGetCustomer, useListSites, updateCustomer, getGetCustomerQueryKey, getListSitesQueryKey } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Building2, User, Mail, Phone, MapPin, Edit, ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetCustomerQueryKey } from "@workspace/api-client-react";
 
 export default function CustomerDetail() {
   const { id } = useParams();
   const customerId = Number(id);
   const { data: customer, isLoading } = useGetCustomer(customerId, { query: { enabled: !!customerId, queryKey: getGetCustomerQueryKey(customerId) } });
-  const { data: sites } = useListSites();
+  const { data: sites } = useListSites({ query: { queryKey: getListSitesQueryKey() } });
   const [isEditOpen, setEditOpen] = useState(false);
 
   if (isLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading...</div>;
@@ -83,7 +82,7 @@ export default function CustomerDetail() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold">Linked Sites</h3>
             <Link href="/sites">
-              <Button size="sm" variant="outline"><Plus className="size-3 mr-2"/> Link Site</Button>
+              <Button size="sm" variant="outline"><Plus className="size-3 mr-2" /> Link Site</Button>
             </Link>
           </div>
 
@@ -125,57 +124,57 @@ export default function CustomerDetail() {
   );
 }
 
-function EditCustomerSheet({ customer, open, onClose }: { customer: any, open: boolean, onClose: () => void }) {
+function EditCustomerSheet({ customer, open, onClose }: { customer: any; open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const updateCustomer = useUpdateCustomer({ customerId: customer.id });
+  const mutation = useMutation({
+    mutationFn: (data: any) => updateCustomer(customer.id, data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(getGetCustomerQueryKey(customer.id), updated);
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
-    name: customer.name, 
-    email: customer.email, 
-    phone: customer.phone || "", 
-    customerType: customer.customerType, 
-    identityOrRegistrationNumber: customer.identityOrRegistrationNumber || "", 
-    billingAddress: customer.billingAddress || "", 
-    serviceAddress: customer.serviceAddress || ""
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone || "",
+    customerType: customer.customerType,
+    identityOrRegistrationNumber: customer.identityOrRegistrationNumber || "",
+    billingAddress: customer.billingAddress || "",
+    serviceAddress: customer.serviceAddress || "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateCustomer.mutate({ data: formData }, {
-      onSuccess: () => {
-        queryClient.setQueryData(getGetCustomerQueryKey(customer.id), (old: any) => ({ ...old, ...formData }));
-        onClose();
-      }
-    });
+    mutation.mutate(formData);
   };
 
   return (
     <SideSheet open={open} onClose={onClose} title="Edit Customer">
       <form onSubmit={onSubmit} className="space-y-4">
-        {/* Same fields as Create... keeping it brief */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Name</label>
-          <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-            value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+          <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Email</label>
-          <input required type="email" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-            value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+          <input required type="email" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Phone</label>
-          <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-            value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Billing Address</label>
-          <textarea className="w-full p-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary min-h-[80px]"
-            value={formData.billingAddress} onChange={e => setFormData({...formData, billingAddress: e.target.value})} />
+          <textarea className="w-full p-3 rounded-md border border-input bg-background text-sm outline-none min-h-[80px]"
+            value={formData.billingAddress} onChange={e => setFormData({ ...formData, billingAddress: e.target.value })} />
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={updateCustomer.isPending}>
-            {updateCustomer.isPending ? "Saving..." : "Save Changes"}
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </form>

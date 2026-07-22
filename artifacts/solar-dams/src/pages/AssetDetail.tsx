@@ -1,22 +1,22 @@
 import React, { useState } from "react";
 import { useParams, Link } from "wouter";
-import { 
-  useGetAsset, useUpdateAsset, useGetSite, 
-  useListEquipment, useCreateEquipment, useUpdateEquipment 
+import {
+  useGetAsset, useGetSite, useListEquipment,
+  updateAsset, createEquipment,
+  getGetAssetQueryKey, getGetSiteQueryKey, getListEquipmentQueryKey,
 } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Zap, MapPin, Edit, ArrowLeft, Plus, Settings2, ShieldCheck, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetAssetQueryKey, getListEquipmentQueryKey } from "@workspace/api-client-react";
 
 export default function AssetDetail() {
   const { id } = useParams();
   const assetId = Number(id);
   const { data: asset, isLoading: assetLoading } = useGetAsset(assetId, { query: { enabled: !!assetId, queryKey: getGetAssetQueryKey(assetId) } });
-  const { data: site } = useGetSite(asset?.siteId || 0, { query: { enabled: !!asset?.siteId, queryKey: getGetAssetQueryKey(asset?.siteId || 0) } });
+  const { data: site } = useGetSite(asset?.siteId || 0, { query: { enabled: !!asset?.siteId, queryKey: getGetSiteQueryKey(asset?.siteId || 0) } });
   const { data: equipments, isLoading: eqLoading } = useListEquipment(assetId, { query: { enabled: !!assetId, queryKey: getListEquipmentQueryKey(assetId) } });
-  
+
   const [isEditAssetOpen, setEditAssetOpen] = useState(false);
   const [isEqSheetOpen, setEqSheetOpen] = useState(false);
 
@@ -34,7 +34,6 @@ export default function AssetDetail() {
         <span className="text-sm font-medium text-muted-foreground">Back to Assets</span>
       </div>
 
-      {/* Hero Card */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card border border-border p-6 rounded-xl shadow-sm">
         <div className="flex items-center gap-4">
           <div className="size-16 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 border border-amber-500/20">
@@ -44,8 +43,8 @@ export default function AssetDetail() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight">{asset.assetName}</h1>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border
-                ${asset.currentStatus === 'operational' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' : 
-                  asset.currentStatus === 'fault' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                ${asset.currentStatus === 'operational' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
+                  asset.currentStatus === 'fault' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
                   'bg-muted text-muted-foreground border-border'}
               `}>
                 {asset.currentStatus.replace('_', ' ')}
@@ -65,7 +64,7 @@ export default function AssetDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href={`/work-orders?asset=${asset.id}`}>
+          <Link href={`/work-orders`}>
             <Button variant="secondary">Work Orders</Button>
           </Link>
           <Button onClick={() => setEditAssetOpen(true)} variant="outline">
@@ -97,7 +96,7 @@ export default function AssetDetail() {
                 <div className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Commissioned</div>
                 <div className="font-medium">{asset.commissioningDate || 'Not recorded'}</div>
               </div>
-              
+
               {site && (
                 <div className="pt-3 border-t border-border">
                   <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Location</div>
@@ -117,29 +116,29 @@ export default function AssetDetail() {
         </div>
 
         <div className="md:col-span-2 space-y-6">
-          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full">
+          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
             <div className="bg-muted/20 px-4 py-3 border-b border-border flex justify-between items-center">
               <h3 className="font-semibold flex items-center gap-2">
                 <Settings2 className="size-4 text-primary" />
                 Equipment Register
               </h3>
               <Button size="sm" variant="outline" onClick={() => setEqSheetOpen(true)}>
-                <Plus className="size-3 mr-2"/> Add Component
+                <Plus className="size-3 mr-2" /> Add Component
               </Button>
             </div>
-            
+
             <div className="p-0 flex-1">
               {eqLoading ? (
-                 <div className="p-8 text-center text-muted-foreground animate-pulse">Loading equipment...</div>
+                <div className="p-8 text-center text-muted-foreground animate-pulse">Loading equipment...</div>
               ) : (!equipments || equipments.length === 0) ? (
-                <div className="p-12 text-center flex flex-col items-center justify-center h-full">
+                <div className="p-12 text-center flex flex-col items-center justify-center">
                   <Cpu className="size-12 text-muted-foreground/30 mb-4" />
                   <p className="text-muted-foreground text-sm">No equipment registered yet.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
                   {equipments.map(eq => (
-                    <div key={eq.id} className="p-4 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row justify-between sm:items-center gap-3 group">
+                    <div key={eq.id} className="p-4 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                       <div className="flex items-start gap-3">
                         <div className="size-8 rounded bg-muted/50 border border-border flex items-center justify-center mt-1">
                           <Cpu className="size-4 text-muted-foreground" />
@@ -148,8 +147,8 @@ export default function AssetDetail() {
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-sm">{eq.manufacturer} {eq.model}</span>
                             <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border
-                              ${eq.status === 'operational' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' : 
-                                eq.status === 'faulty' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                              ${eq.status === 'operational' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
+                                eq.status === 'faulty' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
                                 'bg-muted text-muted-foreground border-border'}
                             `}>
                               {eq.status}
@@ -185,43 +184,40 @@ export default function AssetDetail() {
   );
 }
 
-function EditAssetSheet({ asset, open, onClose }: { asset: any, open: boolean, onClose: () => void }) {
+function EditAssetSheet({ asset, open, onClose }: { asset: any; open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const updateAsset = useUpdateAsset({ assetId: asset.id });
+  const mutation = useMutation({
+    mutationFn: (data: any) => updateAsset(asset.id, data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(getGetAssetQueryKey(asset.id), updated);
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
     assetName: asset.assetName,
-    assetCode: asset.assetCode,
     systemType: asset.systemType,
     installedCapacityKwp: asset.installedCapacityKwp || "",
     acCapacityKw: asset.acCapacityKw || "",
-    currentStatus: asset.currentStatus
+    currentStatus: asset.currentStatus,
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateAsset.mutate({ 
-      data: {
-        ...formData,
-        installedCapacityKwp: formData.installedCapacityKwp ? Number(formData.installedCapacityKwp) : undefined,
-        acCapacityKw: formData.acCapacityKw ? Number(formData.acCapacityKw) : undefined,
-      }
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetAssetQueryKey(asset.id) });
-        onClose();
-      }
+    mutation.mutate({
+      ...formData,
+      installedCapacityKwp: formData.installedCapacityKwp ? Number(formData.installedCapacityKwp) : undefined,
+      acCapacityKw: formData.acCapacityKw ? Number(formData.acCapacityKw) : undefined,
     });
   };
 
   return (
     <SideSheet open={open} onClose={onClose} title="Edit Asset">
       <form onSubmit={onSubmit} className="space-y-4">
-        {/* Skipping full fields for brevity, just keeping a few important ones */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
-          <select 
+          <select
             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.currentStatus} onChange={e => setFormData({...formData, currentStatus: e.target.value as any})}
+            value={formData.currentStatus} onChange={e => setFormData({ ...formData, currentStatus: e.target.value as any })}
           >
             <option value="operational">Operational</option>
             <option value="under_maintenance">Under Maintenance</option>
@@ -232,45 +228,47 @@ function EditAssetSheet({ asset, open, onClose }: { asset: any, open: boolean, o
         <div className="space-y-2">
           <label className="text-sm font-medium">Asset Name</label>
           <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.assetName} onChange={e => setFormData({...formData, assetName: e.target.value})} />
+            value={formData.assetName} onChange={e => setFormData({ ...formData, assetName: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">DC Cap (kWp)</label>
             <input type="number" step="0.01" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.installedCapacityKwp} onChange={e => setFormData({...formData, installedCapacityKwp: e.target.value})} />
+              value={formData.installedCapacityKwp} onChange={e => setFormData({ ...formData, installedCapacityKwp: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">AC Cap (kW)</label>
             <input type="number" step="0.01" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.acCapacityKw} onChange={e => setFormData({...formData, acCapacityKw: e.target.value})} />
+              value={formData.acCapacityKw} onChange={e => setFormData({ ...formData, acCapacityKw: e.target.value })} />
           </div>
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={updateAsset.isPending}>Save Changes</Button>
+          <Button type="submit" disabled={mutation.isPending}>Save Changes</Button>
         </div>
       </form>
     </SideSheet>
   );
 }
 
-function CreateEqSheet({ assetId, open, onClose }: { assetId: number, open: boolean, onClose: () => void }) {
+function CreateEqSheet({ assetId, open, onClose }: { assetId: number; open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const createEq = useCreateEquipment({ assetId });
+  const mutation = useMutation({
+    mutationFn: (data: any) => createEquipment(assetId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListEquipmentQueryKey(assetId) });
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
-    equipmentType: "inverter" as const, manufacturer: "", model: "", serialNumber: "", 
-    status: "operational" as const, warrantyEnd: ""
+    equipmentType: "inverter" as const,
+    manufacturer: "", model: "", serialNumber: "",
+    status: "operational" as const, warrantyEnd: "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createEq.mutate({ data: formData }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListEquipmentQueryKey(assetId) });
-        onClose();
-      }
-    });
+    mutation.mutate(formData);
   };
 
   return (
@@ -279,7 +277,7 @@ function CreateEqSheet({ assetId, open, onClose }: { assetId: number, open: bool
         <div className="space-y-2">
           <label className="text-sm font-medium">Equipment Type</label>
           <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.equipmentType} onChange={e => setFormData({...formData, equipmentType: e.target.value as any})}
+            value={formData.equipmentType} onChange={e => setFormData({ ...formData, equipmentType: e.target.value as any })}
           >
             <option value="inverter">Inverter</option>
             <option value="pv_module">PV Module</option>
@@ -292,29 +290,29 @@ function CreateEqSheet({ assetId, open, onClose }: { assetId: number, open: bool
           <div className="space-y-2">
             <label className="text-sm font-medium">Manufacturer</label>
             <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.manufacturer} onChange={e => setFormData({...formData, manufacturer: e.target.value})} />
+              value={formData.manufacturer} onChange={e => setFormData({ ...formData, manufacturer: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Model</label>
             <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
+              value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} />
           </div>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Serial Number</label>
           <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono outline-none"
-            value={formData.serialNumber} onChange={e => setFormData({...formData, serialNumber: e.target.value})} />
+            value={formData.serialNumber} onChange={e => setFormData({ ...formData, serialNumber: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Warranty End Date</label>
             <input type="date" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.warrantyEnd} onChange={e => setFormData({...formData, warrantyEnd: e.target.value})} />
+              value={formData.warrantyEnd} onChange={e => setFormData({ ...formData, warrantyEnd: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Status</label>
             <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}
+              value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}
             >
               <option value="operational">Operational</option>
               <option value="faulty">Faulty</option>
@@ -323,7 +321,7 @@ function CreateEqSheet({ assetId, open, onClose }: { assetId: number, open: bool
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={createEq.isPending}>Add Component</Button>
+          <Button type="submit" disabled={mutation.isPending}>Add Component</Button>
         </div>
       </form>
     </SideSheet>
