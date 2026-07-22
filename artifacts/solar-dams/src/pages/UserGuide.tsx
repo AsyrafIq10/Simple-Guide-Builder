@@ -271,6 +271,43 @@ export default function UserGuide() {
               <p className="text-sm">The pipeline explicitly tracks Net Energy Metering (NEM) submissions to TNB/SEB. A unit cannot be commissioned until NEM approval is secured.</p>
             </div>
           </div>
+
+          <h3 className="text-lg font-bold mt-8 mb-4">Managing Projects</h3>
+          <p className="text-sm mb-4">
+            Each project card on the Projects list has an <strong>Edit</strong> and <strong>Delete</strong> action at the bottom of the card. You can also Edit or Delete a project from inside its detail page using the buttons in the project header.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold mb-2 flex items-center gap-2"><Pencil className="size-4 text-primary" /> Edit Project</h4>
+              <p className="text-sm">Update the project name, code, developer company, location, total unit count, and overall status. The summary stats recalculate automatically from actual unit pipeline data.</p>
+            </div>
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold mb-2 flex items-center gap-2"><Trash2 className="size-4 text-destructive" /> Delete Project</h4>
+              <p className="text-sm">Permanently removes the project and <strong>all housing units</strong> beneath it. A confirmation prompt is shown before deletion. Use with care — this cannot be reversed.</p>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-bold mt-8 mb-4">Managing Housing Units</h3>
+          <p className="text-sm mb-4">
+            Inside a project's detail page, every row in the <strong>Housing Units Tracker</strong> table has inline <strong>Edit</strong> and <strong>Delete</strong> buttons in the Actions column.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold mb-2 flex items-center gap-2"><Pencil className="size-4 text-primary" /> Edit Unit</h4>
+              <p className="text-sm">Update any unit field — unit number, phase, block, purchaser name, PV capacity, or <strong>Pipeline Status</strong>. Changing the pipeline status is the primary way to advance a unit through installation stages. The project summary counters (Installed, NEM Approved, etc.) update immediately.</p>
+            </div>
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold mb-2 flex items-center gap-2"><Trash2 className="size-4 text-destructive" /> Delete Unit</h4>
+              <p className="text-sm">Removes a single housing unit from the tracker. A confirmation prompt is shown first. The project summary counters refresh automatically after deletion.</p>
+            </div>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg flex gap-3 text-blue-800 dark:text-blue-400">
+            <Zap className="size-5 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <strong>Pipeline Status tip:</strong> The 15-stage pipeline is the backbone of the Developer Portal. Use the Edit Unit sheet to advance a unit's status as work progresses on-site. The four pipeline indicator icons (Prep → Install → Utility → Done) in each row give a quick visual summary of where each unit stands.
+            </div>
+          </div>
         </section>
 
       </div>
