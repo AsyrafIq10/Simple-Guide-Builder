@@ -1,0 +1,218 @@
+import React, { useState, useEffect } from "react";
+import { BookOpen, MapPin, Zap, HardHat, Home, Server, ChevronRight } from "lucide-react";
+
+export default function UserGuide() {
+  const [activeSection, setActiveSection] = useState("getting-started");
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = document.querySelectorAll('section');
+      let current = '';
+      
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (window.scrollY >= sectionTop - 120) {
+          current = section.getAttribute('id') || '';
+        }
+      });
+      
+      if (current) setActiveSection(current);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      window.scrollTo({
+        top: element.offsetTop - 80,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  const sections = [
+    { id: "getting-started", title: "Getting Started", icon: BookOpen },
+    { id: "dashboard", title: "Dashboard & KPIs", icon: Server },
+    { id: "asset-registry", title: "Asset Registry Workflow", icon: Zap },
+    { id: "equipment", title: "Equipment Register", icon: MapPin },
+    { id: "work-orders", title: "Work Orders Lifecycle", icon: HardHat },
+    { id: "developer-portal", title: "Housing Developer Portal", icon: Home },
+  ];
+
+  return (
+    <div className="flex flex-col md:flex-row gap-8 relative items-start animate-in fade-in duration-500">
+      
+      {/* Sticky Sidebar */}
+      <div className="hidden md:block w-64 shrink-0 sticky top-24">
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+          <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-4 px-2">Table of Contents</h3>
+          <ul className="space-y-1">
+            {sections.map(section => (
+              <li key={section.id}>
+                <button
+                  onClick={() => scrollTo(section.id)}
+                  className={`w-full flex items-center justify-between text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                    activeSection === section.id 
+                      ? "bg-primary text-primary-foreground font-medium" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <section.icon className="size-4" />
+                    <span>{section.title}</span>
+                  </div>
+                  {activeSection === section.id && <ChevronRight className="size-3" />}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 bg-card border border-border rounded-xl shadow-sm p-8 prose prose-slate dark:prose-invert max-w-none">
+        
+        <div className="mb-12 border-b border-border pb-8">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">User Guide</h1>
+          <p className="text-muted-foreground text-lg">
+            Welcome to the GBJ SolarDAMS Operations Command Centre. This guide provides comprehensive documentation on managing your solar portfolio, asset registries, maintenance workflows, and developer housing projects.
+          </p>
+        </div>
+
+        <section id="getting-started" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-3 border-b border-border pb-2 mb-6 text-primary">
+            <BookOpen className="size-6" /> Getting Started
+          </h2>
+          <p>
+            GBJ SolarDAMS is a digital asset management system purpose-built for solar EPC and O&M operators in the Malaysian market. The platform is divided into three core pillars:
+          </p>
+          <ul className="space-y-4 my-6 list-none pl-0">
+            <li className="bg-muted/30 p-4 rounded-lg border border-border">
+              <strong>Asset Registry:</strong> The hierarchical database of Customers, Sites, PV Assets, and Component Equipment.
+            </li>
+            <li className="bg-muted/30 p-4 rounded-lg border border-border">
+              <strong>Operations:</strong> The central dispatch for managing Work Orders, maintenance schedules, and fault resolutions.
+            </li>
+            <li className="bg-muted/30 p-4 rounded-lg border border-border">
+              <strong>Housing Developer Portal:</strong> A specialized tracking pipeline for mass housing NEM implementations, tracking hundreds of units through installation and utility approvals.
+            </li>
+          </ul>
+        </section>
+
+        <section id="dashboard" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-3 border-b border-border pb-2 mb-6 text-primary">
+            <Server className="size-6" /> Dashboard & KPIs
+          </h2>
+          <p>
+            The dashboard acts as your operations command center. It aggregates real-time data across your entire portfolio to highlight urgent issues requiring immediate attention.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold text-red-500 mb-2">Overdue Work Orders</h4>
+              <p className="text-sm">Highlights maintenance tasks that have passed their scheduled completion date. High priority for O&M managers.</p>
+            </div>
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold text-amber-500 mb-2">Expiring Warranties</h4>
+              <p className="text-sm">Flags equipment warranties (inverters, modules) expiring within the next 90 days. Crucial for triggering end-of-warranty inspections.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="asset-registry" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-3 border-b border-border pb-2 mb-6 text-primary">
+            <Zap className="size-6" /> Asset Registry Workflow
+          </h2>
+          <p>
+            The asset registry enforces a strict hierarchy to ensure clean data management. When onboarding a new project, follow this exact sequence:
+          </p>
+          <div className="relative border-l-2 border-primary/30 ml-3 pl-6 space-y-8 my-8">
+            <div className="relative">
+              <div className="absolute -left-[35px] top-1 bg-primary text-white size-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-card">1</div>
+              <h4 className="text-lg font-bold m-0">Create the Customer</h4>
+              <p className="text-sm mt-2">Establish the commercial, residential, or industrial entity that owns the assets. Capture registration IDs and contact info.</p>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-[35px] top-1 bg-primary text-white size-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-card">2</div>
+              <h4 className="text-lg font-bold m-0">Register the Site</h4>
+              <p className="text-sm mt-2">Link a physical location (Site) to the Customer. A customer can have multiple sites (e.g., a retail chain with solar on multiple branches).</p>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-[35px] top-1 bg-primary text-white size-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-card">3</div>
+              <h4 className="text-lg font-bold m-0">Create the PV Asset</h4>
+              <p className="text-sm mt-2">Register the actual solar system (PV Asset) linked to the Site. Define system type (Grid-tied, NEM, Off-grid) and total capacity.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="equipment" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-3 border-b border-border pb-2 mb-6 text-primary">
+            <MapPin className="size-6" /> Equipment Register
+          </h2>
+          <p>
+            Once a PV Asset is created, you must populate its Equipment Register. This tracks the serial numbers, capacities, and warranties of every major component comprising the system.
+          </p>
+          <ul className="list-disc pl-6 space-y-2 mb-6">
+            <li><strong>Inverters:</strong> Critical for warranty tracking and fault isolation.</li>
+            <li><strong>PV Modules:</strong> Track exact models and batch serials.</li>
+            <li><strong>Sensors & Meters:</strong> Necessary for monitoring integration in Phase 2.</li>
+          </ul>
+          <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-lg flex gap-3 text-amber-800 dark:text-amber-500">
+            <HardHat className="size-5 shrink-0 mt-0.5" />
+            <p className="text-sm m-0"><strong>Pro Tip:</strong> Accurate serial number entry during commissioning saves hours during warranty claims with manufacturers like Huawei or Sungrow.</p>
+          </div>
+        </section>
+
+        <section id="work-orders" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-3 border-b border-border pb-2 mb-6 text-primary">
+            <HardHat className="size-6" /> Work Orders Lifecycle
+          </h2>
+          <p>
+            Work Orders (WO) drive all field operations. Every WO moves through a strict 11-status lifecycle to ensure accountability and cost tracking.
+          </p>
+          
+          <div className="overflow-x-auto my-6">
+            <table className="w-full text-sm text-left border border-border">
+              <thead className="bg-muted/20 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 border-b border-border w-1/4">Status Stage</th>
+                  <th className="px-4 py-3 border-b border-border">Definition & Next Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                <tr><td className="px-4 py-3 font-bold text-gray-500">Draft / Open</td><td className="px-4 py-3">Issue logged, awaiting assignment by O&M Coordinator.</td></tr>
+                <tr><td className="px-4 py-3 font-bold text-blue-500">Assigned / Scheduled</td><td className="px-4 py-3">Allocated to a technician and date confirmed.</td></tr>
+                <tr><td className="px-4 py-3 font-bold text-amber-500">In Progress</td><td className="px-4 py-3">Technician currently on-site executing the work.</td></tr>
+                <tr><td className="px-4 py-3 font-bold text-red-500">Awaiting Parts/Approval</td><td className="px-4 py-3">Work halted. Requires management sign-off or spare parts delivery.</td></tr>
+                <tr><td className="px-4 py-3 font-bold text-teal-500">Completed</td><td className="px-4 py-3">Field work done. Pending management verification.</td></tr>
+                <tr><td className="px-4 py-3 font-bold text-primary">Verified / Closed</td><td className="px-4 py-3">Work confirmed satisfactory. Costs finalized and archived.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="developer-portal" className="mb-8 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-3 border-b border-border pb-2 mb-6 text-primary">
+            <Home className="size-6" /> Housing Developer Portal
+          </h2>
+          <p>
+            Managing solar installations for mass housing projects (e.g., 200+ units in a new phase) requires tracking at the unit level. The Developer Portal provides a specialized view for this workflow.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+            <div className="bg-card border border-border p-5 rounded-xl">
+              <h4 className="font-bold text-lg mb-2 flex items-center gap-2"><MapPin className="size-4 text-primary" /> Tracking Pipeline</h4>
+              <p className="text-sm">Each housing unit moves through a 15-stage pipeline from "Not Started" to "Testing" to "Utility Approval" (NEM), and finally "Handed Over".</p>
+            </div>
+            <div className="bg-card border border-border p-5 rounded-xl">
+              <h4 className="font-bold text-lg mb-2 flex items-center gap-2"><Zap className="size-4 text-primary" /> NEM Management</h4>
+              <p className="text-sm">The pipeline explicitly tracks Net Energy Metering (NEM) submissions to TNB/SEB. A unit cannot be commissioned until NEM approval is secured.</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  );
+}

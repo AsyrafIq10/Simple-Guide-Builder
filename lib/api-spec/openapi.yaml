@@ -2,21 +2,37 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
+  description: GBJ SolarDAMS API — Phase 1 (Asset Registry, Maintenance, Customer Portal, Housing Developer)
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Portfolio dashboard summaries
+  - name: customers
+    description: Customer management
+  - name: sites
+    description: Site management
+  - name: assets
+    description: PV asset management
+  - name: equipment
+    description: Equipment register
+  - name: workorders
+    description: Work order management
+  - name: projects
+    description: Housing developer projects
+  - name: units
+    description: Housing unit solar tracker
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +40,1457 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Dashboard ───────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Portfolio-level KPI summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-work-orders:
+    get:
+      operationId: getRecentWorkOrders
+      tags: [dashboard]
+      summary: Recent work orders for dashboard feed
+      responses:
+        "200":
+          description: Recent work orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkOrder"
+
+  /dashboard/asset-status-breakdown:
+    get:
+      operationId: getAssetStatusBreakdown
+      tags: [dashboard]
+      summary: Count of assets grouped by status
+      responses:
+        "200":
+          description: Status breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StatusCount"
+
+  /dashboard/warranty-expiring:
+    get:
+      operationId: getWarrantyExpiring
+      tags: [dashboard]
+      summary: Equipment with warranties expiring within 90 days
+      responses:
+        "200":
+          description: Expiring warranties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipment"
+
+  # ─── Customers ───────────────────────────────────────────────
+  /customers:
+    get:
+      operationId: listCustomers
+      tags: [customers]
+      summary: List all customers
+      responses:
+        "200":
+          description: Customer list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+    post:
+      operationId: createCustomer
+      tags: [customers]
+      summary: Create a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+
+  /customers/{customerId}:
+    get:
+      operationId: getCustomer
+      tags: [customers]
+      summary: Get a customer by ID
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCustomer
+      tags: [customers]
+      summary: Update a customer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+    delete:
+      operationId: deleteCustomer
+      tags: [customers]
+      summary: Delete a customer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Sites ───────────────────────────────────────────────────
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List all sites
+      responses:
+        "200":
+          description: Site list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Site"
+    post:
+      operationId: createSite
+      tags: [sites]
+      summary: Create a site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+
+  /sites/{siteId}:
+    get:
+      operationId: getSite
+      tags: [sites]
+      summary: Get a site by ID
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateSite
+      tags: [sites]
+      summary: Update a site
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+    delete:
+      operationId: deleteSite
+      tags: [sites]
+      summary: Delete a site
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── PV Assets ───────────────────────────────────────────────
+  /assets:
+    get:
+      operationId: listAssets
+      tags: [assets]
+      summary: List all PV assets
+      responses:
+        "200":
+          description: Asset list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PvAsset"
+    post:
+      operationId: createAsset
+      tags: [assets]
+      summary: Create a PV asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PvAssetInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PvAsset"
+
+  /assets/{assetId}:
+    get:
+      operationId: getAsset
+      tags: [assets]
+      summary: Get a PV asset by ID
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: PV Asset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PvAsset"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateAsset
+      tags: [assets]
+      summary: Update a PV asset
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PvAssetUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PvAsset"
+    delete:
+      operationId: deleteAsset
+      tags: [assets]
+      summary: Delete a PV asset
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Equipment ───────────────────────────────────────────────
+  /assets/{assetId}/equipment:
+    get:
+      operationId: listEquipment
+      tags: [equipment]
+      summary: List equipment for an asset
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Equipment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipment"
+    post:
+      operationId: createEquipment
+      tags: [equipment]
+      summary: Register equipment on an asset
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+
+  /equipment/{equipmentId}:
+    get:
+      operationId: getEquipment
+      tags: [equipment]
+      summary: Get equipment by ID
+      parameters:
+        - name: equipmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Equipment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateEquipment
+      tags: [equipment]
+      summary: Update equipment
+      parameters:
+        - name: equipmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+    delete:
+      operationId: deleteEquipment
+      tags: [equipment]
+      summary: Delete equipment
+      parameters:
+        - name: equipmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Work Orders ─────────────────────────────────────────────
+  /work-orders:
+    get:
+      operationId: listWorkOrders
+      tags: [workorders]
+      summary: List all work orders
+      responses:
+        "200":
+          description: Work order list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkOrder"
+    post:
+      operationId: createWorkOrder
+      tags: [workorders]
+      summary: Create a work order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkOrderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkOrder"
+
+  /work-orders/{workOrderId}:
+    get:
+      operationId: getWorkOrder
+      tags: [workorders]
+      summary: Get a work order by ID
+      parameters:
+        - name: workOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Work order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkOrder"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateWorkOrder
+      tags: [workorders]
+      summary: Update a work order
+      parameters:
+        - name: workOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkOrderUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkOrder"
+    delete:
+      operationId: deleteWorkOrder
+      tags: [workorders]
+      summary: Delete a work order
+      parameters:
+        - name: workOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Housing Developer Projects ───────────────────────────────
+  /developer-projects:
+    get:
+      operationId: listDeveloperProjects
+      tags: [projects]
+      summary: List housing developer projects
+      responses:
+        "200":
+          description: Projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeveloperProject"
+    post:
+      operationId: createDeveloperProject
+      tags: [projects]
+      summary: Create a housing developer project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperProjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperProject"
+
+  /developer-projects/{projectId}:
+    get:
+      operationId: getDeveloperProject
+      tags: [projects]
+      summary: Get a housing developer project by ID
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperProject"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateDeveloperProject
+      tags: [projects]
+      summary: Update a housing developer project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperProjectUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperProject"
+    delete:
+      operationId: deleteDeveloperProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /developer-projects/{projectId}/summary:
+    get:
+      operationId: getDeveloperProjectSummary
+      tags: [projects]
+      summary: Get installation progress summary for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project summary counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSummary"
+
+  # ─── Housing Units ────────────────────────────────────────────
+  /developer-projects/{projectId}/units:
+    get:
+      operationId: listHousingUnits
+      tags: [units]
+      summary: List housing units for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Units
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HousingUnit"
+    post:
+      operationId: createHousingUnit
+      tags: [units]
+      summary: Create a housing unit
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HousingUnitInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HousingUnit"
+
+  /housing-units/{unitId}:
+    get:
+      operationId: getHousingUnit
+      tags: [units]
+      summary: Get a housing unit by ID
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HousingUnit"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateHousingUnit
+      tags: [units]
+      summary: Update a housing unit
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HousingUnitUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HousingUnit"
+    delete:
+      operationId: deleteHousingUnit
+      tags: [units]
+      summary: Delete a housing unit
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ─── Dashboard ─────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required:
+        - totalAssets
+        - totalInstalledKwp
+        - totalSites
+        - totalCustomers
+        - openWorkOrders
+        - overdueWorkOrders
+        - warrantiesExpiringSoon
+        - assetsWithoutMonitoring
+      properties:
+        totalAssets:
+          type: integer
+        totalInstalledKwp:
+          type: number
+        totalSites:
+          type: integer
+        totalCustomers:
+          type: integer
+        openWorkOrders:
+          type: integer
+        overdueWorkOrders:
+          type: integer
+        warrantiesExpiringSoon:
+          type: integer
+        assetsWithoutMonitoring:
+          type: integer
+
+    StatusCount:
+      type: object
+      required: [status, count]
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+
+    # ─── Customer ──────────────────────────────────────────
+    Customer:
+      type: object
+      required: [id, customerType, name, email, createdAt]
+      properties:
+        id:
+          type: integer
+        customerType:
+          type: string
+          enum: [residential, commercial, industrial, government]
+        name:
+          type: string
+        identityOrRegistrationNumber:
+          type: ["string", "null"]
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        billingAddress:
+          type: ["string", "null"]
+        serviceAddress:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    CustomerInput:
+      type: object
+      required: [customerType, name, email]
+      properties:
+        customerType:
+          type: string
+          enum: [residential, commercial, industrial, government]
+        name:
+          type: string
+          minLength: 1
+        identityOrRegistrationNumber:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        billingAddress:
+          type: string
+        serviceAddress:
+          type: string
+
+    CustomerUpdate:
+      type: object
+      properties:
+        customerType:
+          type: string
+          enum: [residential, commercial, industrial, government]
+        name:
+          type: string
+        identityOrRegistrationNumber:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        billingAddress:
+          type: string
+        serviceAddress:
+          type: string
+
+    # ─── Site ─────────────────────────────────────────────
+    Site:
+      type: object
+      required: [id, siteName, siteCode, address, siteType, status, createdAt]
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: ["integer", "null"]
+        siteName:
+          type: string
+        siteCode:
+          type: string
+        address:
+          type: string
+        latitude:
+          type: ["number", "null"]
+        longitude:
+          type: ["number", "null"]
+        siteType:
+          type: string
+          enum: [residential, commercial, industrial, utility_scale, government]
+        gridRegion:
+          type: ["string", "null"]
+        utilityProvider:
+          type: ["string", "null"]
+        commissioningDate:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, inactive, under_construction, decommissioned]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    SiteInput:
+      type: object
+      required: [siteName, siteCode, address, siteType, status]
+      properties:
+        customerId:
+          type: integer
+        siteName:
+          type: string
+          minLength: 1
+        siteCode:
+          type: string
+          minLength: 1
+        address:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        siteType:
+          type: string
+          enum: [residential, commercial, industrial, utility_scale, government]
+        gridRegion:
+          type: string
+        utilityProvider:
+          type: string
+        commissioningDate:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, under_construction, decommissioned]
+
+    SiteUpdate:
+      type: object
+      properties:
+        customerId:
+          type: integer
+        siteName:
+          type: string
+        siteCode:
+          type: string
+        address:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        siteType:
+          type: string
+          enum: [residential, commercial, industrial, utility_scale, government]
+        gridRegion:
+          type: string
+        utilityProvider:
+          type: string
+        commissioningDate:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, under_construction, decommissioned]
+
+    # ─── PV Asset ─────────────────────────────────────────
+    PvAsset:
+      type: object
+      required: [id, siteId, assetName, assetCode, systemType, currentStatus, createdAt]
+      properties:
+        id:
+          type: integer
+        siteId:
+          type: integer
+        assetName:
+          type: string
+        assetCode:
+          type: string
+        systemType:
+          type: string
+          enum: [grid_tied, hybrid, off_grid, nem, nem2]
+        installedCapacityKwp:
+          type: ["number", "null"]
+        acCapacityKw:
+          type: ["number", "null"]
+        interconnectionType:
+          type: ["string", "null"]
+        commissioningDate:
+          type: ["string", "null"]
+        designLifeYears:
+          type: ["integer", "null"]
+        currentStatus:
+          type: string
+          enum: [operational, fault, offline, under_maintenance, decommissioned]
+        monitoringStatus:
+          type: string
+          enum: [active, inactive, not_configured]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    PvAssetInput:
+      type: object
+      required: [siteId, assetName, assetCode, systemType, currentStatus]
+      properties:
+        siteId:
+          type: integer
+        assetName:
+          type: string
+          minLength: 1
+        assetCode:
+          type: string
+          minLength: 1
+        systemType:
+          type: string
+          enum: [grid_tied, hybrid, off_grid, nem, nem2]
+        installedCapacityKwp:
+          type: number
+        acCapacityKw:
+          type: number
+        interconnectionType:
+          type: string
+        commissioningDate:
+          type: string
+        designLifeYears:
+          type: integer
+        currentStatus:
+          type: string
+          enum: [operational, fault, offline, under_maintenance, decommissioned]
+        monitoringStatus:
+          type: string
+          enum: [active, inactive, not_configured]
+
+    PvAssetUpdate:
+      type: object
+      properties:
+        siteId:
+          type: integer
+        assetName:
+          type: string
+        assetCode:
+          type: string
+        systemType:
+          type: string
+          enum: [grid_tied, hybrid, off_grid, nem, nem2]
+        installedCapacityKwp:
+          type: number
+        acCapacityKw:
+          type: number
+        interconnectionType:
+          type: string
+        commissioningDate:
+          type: string
+        designLifeYears:
+          type: integer
+        currentStatus:
+          type: string
+          enum: [operational, fault, offline, under_maintenance, decommissioned]
+        monitoringStatus:
+          type: string
+          enum: [active, inactive, not_configured]
+
+    # ─── Equipment ────────────────────────────────────────
+    Equipment:
+      type: object
+      required: [id, assetId, equipmentType, manufacturer, model, serialNumber, status, createdAt]
+      properties:
+        id:
+          type: integer
+        assetId:
+          type: integer
+        equipmentType:
+          type: string
+          enum: [pv_module, inverter, battery, meter, switchboard, mounting_system, sensor, communications, other]
+        manufacturer:
+          type: string
+        model:
+          type: string
+        serialNumber:
+          type: string
+        ratedCapacity:
+          type: ["string", "null"]
+        installationDate:
+          type: ["string", "null"]
+        warrantyStart:
+          type: ["string", "null"]
+        warrantyEnd:
+          type: ["string", "null"]
+        locationReference:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [operational, faulty, replaced, decommissioned]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    EquipmentInput:
+      type: object
+      required: [equipmentType, manufacturer, model, serialNumber, status]
+      properties:
+        equipmentType:
+          type: string
+          enum: [pv_module, inverter, battery, meter, switchboard, mounting_system, sensor, communications, other]
+        manufacturer:
+          type: string
+          minLength: 1
+        model:
+          type: string
+          minLength: 1
+        serialNumber:
+          type: string
+          minLength: 1
+        ratedCapacity:
+          type: string
+        installationDate:
+          type: string
+        warrantyStart:
+          type: string
+        warrantyEnd:
+          type: string
+        locationReference:
+          type: string
+        status:
+          type: string
+          enum: [operational, faulty, replaced, decommissioned]
+
+    EquipmentUpdate:
+      type: object
+      properties:
+        equipmentType:
+          type: string
+          enum: [pv_module, inverter, battery, meter, switchboard, mounting_system, sensor, communications, other]
+        manufacturer:
+          type: string
+        model:
+          type: string
+        serialNumber:
+          type: string
+        ratedCapacity:
+          type: string
+        installationDate:
+          type: string
+        warrantyStart:
+          type: string
+        warrantyEnd:
+          type: string
+        locationReference:
+          type: string
+        status:
+          type: string
+          enum: [operational, faulty, replaced, decommissioned]
+
+    # ─── Work Order ───────────────────────────────────────
+    WorkOrder:
+      type: object
+      required: [id, assetId, workOrderNumber, type, priority, description, status, createdAt]
+      properties:
+        id:
+          type: integer
+        assetId:
+          type: integer
+        workOrderNumber:
+          type: string
+        type:
+          type: string
+          enum: [preventive, corrective, emergency, inspection, warranty]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        assignedTo:
+          type: ["string", "null"]
+        scheduledDate:
+          type: ["string", "null"]
+        startedAt:
+          type: ["string", "null"]
+        completedAt:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [draft, open, assigned, scheduled, in_progress, awaiting_parts, awaiting_approval, completed, verified, closed, cancelled]
+        labourCost:
+          type: ["number", "null"]
+        materialCost:
+          type: ["number", "null"]
+        totalCost:
+          type: ["number", "null"]
+        findings:
+          type: ["string", "null"]
+        correctiveAction:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    WorkOrderInput:
+      type: object
+      required: [assetId, type, priority, description, status]
+      properties:
+        assetId:
+          type: integer
+        type:
+          type: string
+          enum: [preventive, corrective, emergency, inspection, warranty]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+          minLength: 1
+        assignedTo:
+          type: string
+        scheduledDate:
+          type: string
+        status:
+          type: string
+          enum: [draft, open, assigned, scheduled, in_progress, awaiting_parts, awaiting_approval, completed, verified, closed, cancelled]
+
+    WorkOrderUpdate:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [preventive, corrective, emergency, inspection, warranty]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        assignedTo:
+          type: string
+        scheduledDate:
+          type: string
+        startedAt:
+          type: string
+        completedAt:
+          type: string
+        status:
+          type: string
+          enum: [draft, open, assigned, scheduled, in_progress, awaiting_parts, awaiting_approval, completed, verified, closed, cancelled]
+        labourCost:
+          type: number
+        materialCost:
+          type: number
+        findings:
+          type: string
+        correctiveAction:
+          type: string
+
+    # ─── Developer Project ────────────────────────────────
+    DeveloperProject:
+      type: object
+      required: [id, projectName, projectCode, developerName, status, createdAt]
+      properties:
+        id:
+          type: integer
+        projectName:
+          type: string
+        projectCode:
+          type: string
+        developerName:
+          type: string
+        location:
+          type: ["string", "null"]
+        totalUnits:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [planning, in_progress, completed, on_hold]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    DeveloperProjectInput:
+      type: object
+      required: [projectName, projectCode, developerName, status]
+      properties:
+        projectName:
+          type: string
+          minLength: 1
+        projectCode:
+          type: string
+          minLength: 1
+        developerName:
+          type: string
+          minLength: 1
+        location:
+          type: string
+        totalUnits:
+          type: integer
+        status:
+          type: string
+          enum: [planning, in_progress, completed, on_hold]
+
+    DeveloperProjectUpdate:
+      type: object
+      properties:
+        projectName:
+          type: string
+        projectCode:
+          type: string
+        developerName:
+          type: string
+        location:
+          type: string
+        totalUnits:
+          type: integer
+        status:
+          type: string
+          enum: [planning, in_progress, completed, on_hold]
+
+    ProjectSummary:
+      type: object
+      required: [totalUnits, installed, commissioned, handedOver, nemSubmitted, nemApproved, outstanding]
+      properties:
+        totalUnits:
+          type: integer
+        installed:
+          type: integer
+        commissioned:
+          type: integer
+        handedOver:
+          type: integer
+        nemSubmitted:
+          type: integer
+        nemApproved:
+          type: integer
+        outstanding:
+          type: integer
+
+    # ─── Housing Unit ─────────────────────────────────────
+    HousingUnit:
+      type: object
+      required: [id, projectId, unitNumber, unitStatus, createdAt]
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        unitNumber:
+          type: string
+        block:
+          type: ["string", "null"]
+        phase:
+          type: ["string", "null"]
+        purchaserName:
+          type: ["string", "null"]
+        purchaserContact:
+          type: ["string", "null"]
+        pvCapacityKwp:
+          type: ["number", "null"]
+        inverterModel:
+          type: ["string", "null"]
+        inverterSerial:
+          type: ["string", "null"]
+        moduleModel:
+          type: ["string", "null"]
+        moduleSerial:
+          type: ["string", "null"]
+        utilityAccountNumber:
+          type: ["string", "null"]
+        meterNumber:
+          type: ["string", "null"]
+        nemApplicationDate:
+          type: ["string", "null"]
+        nemApprovalDate:
+          type: ["string", "null"]
+        commissioningDate:
+          type: ["string", "null"]
+        handoverDate:
+          type: ["string", "null"]
+        warrantyStart:
+          type: ["string", "null"]
+        warrantyEnd:
+          type: ["string", "null"]
+        unitStatus:
+          type: string
+          enum: [not_started, design_confirmed, equipment_allocated, installation_in_progress, installation_completed, testing_completed, utility_submission_pending, utility_submission_submitted, utility_approval_received, meter_installed, commissioned, handover_pending, handed_over, under_warranty, closed]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    HousingUnitInput:
+      type: object
+      required: [unitNumber, unitStatus]
+      properties:
+        unitNumber:
+          type: string
+          minLength: 1
+        block:
+          type: string
+        phase:
+          type: string
+        purchaserName:
+          type: string
+        purchaserContact:
+          type: string
+        pvCapacityKwp:
+          type: number
+        inverterModel:
+          type: string
+        inverterSerial:
+          type: string
+        moduleModel:
+          type: string
+        moduleSerial:
+          type: string
+        utilityAccountNumber:
+          type: string
+        meterNumber:
+          type: string
+        nemApplicationDate:
+          type: string
+        nemApprovalDate:
+          type: string
+        commissioningDate:
+          type: string
+        handoverDate:
+          type: string
+        warrantyStart:
+          type: string
+        warrantyEnd:
+          type: string
+        unitStatus:
+          type: string
+          enum: [not_started, design_confirmed, equipment_allocated, installation_in_progress, installation_completed, testing_completed, utility_submission_pending, utility_submission_submitted, utility_approval_received, meter_installed, commissioned, handover_pending, handed_over, under_warranty, closed]
+
+    HousingUnitUpdate:
+      type: object
+      properties:
+        unitNumber:
+          type: string
+        block:
+          type: string
+        phase:
+          type: string
+        purchaserName:
+          type: string
+        purchaserContact:
+          type: string
+        pvCapacityKwp:
+          type: number
+        inverterModel:
+          type: string
+        inverterSerial:
+          type: string
+        moduleModel:
+          type: string
+        moduleSerial:
+          type: string
+        utilityAccountNumber:
+          type: string
+        meterNumber:
+          type: string
+        nemApplicationDate:
+          type: string
+        nemApprovalDate:
+          type: string
+        commissioningDate:
+          type: string
+        handoverDate:
+          type: string
+        warrantyStart:
+          type: string
+        warrantyEnd:
+          type: string
+        unitStatus:
+          type: string
+          enum: [not_started, design_confirmed, equipment_allocated, installation_in_progress, installation_completed, testing_completed, utility_submission_pending, utility_submission_submitted, utility_approval_received, meter_installed, commissioned, handover_pending, handed_over, under_warranty, closed]

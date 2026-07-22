@@ -1,0 +1,1093 @@
+{
+  "project": {
+    "name": "GBJ Solar Digital Asset Management System",
+    "short_name": "GBJ SolarDAMS",
+    "version": "1.0.0",
+    "description": "A modular web application for managing solar PV assets throughout their lifecycle, including asset registration, monitoring, predictive maintenance, drone inspections, financial analysis, asset health scoring, carbon reporting, customer access, and housing developer portfolio management.",
+    "primary_market": "Malaysia, with initial deployment focus on Sarawak",
+    "target_users": [
+      "Solar EPC contractors",
+      "Solar O&M companies",
+      "Housing developers",
+      "Commercial and industrial PV owners",
+      "Large-scale solar operators",
+      "Government agencies",
+      "Financial institutions",
+      "Asset managers",
+      "Residential PV owners"
+    ],
+    "deployment_model": "Multi-tenant SaaS",
+    "default_currency": "MYR",
+    "default_timezone": "Asia/Kuching",
+    "default_language": "en",
+    "supported_languages": [
+      "en",
+      "ms",
+      "zh-CN"
+    ]
+  },
+  "business_objectives": [
+    "Create a single source of truth for all PV assets and associated lifecycle data.",
+    "Reduce downtime through early fault detection and predictive maintenance.",
+    "Improve energy yield, operational efficiency, and maintenance planning.",
+    "Standardise project, equipment, monitoring, financial, warranty, and service records.",
+    "Provide portfolio-level visibility across multiple sites and customers.",
+    "Enable future digital twin, AI, drone analytics, REC, and ESG integrations."
+  ],
+  "user_roles": [
+    {
+      "role": "super_admin",
+      "permissions": [
+        "all"
+      ]
+    },
+    {
+      "role": "tenant_admin",
+      "permissions": [
+        "manage_tenant",
+        "manage_users",
+        "manage_assets",
+        "manage_integrations",
+        "view_all_reports"
+      ]
+    },
+    {
+      "role": "asset_manager",
+      "permissions": [
+        "create_assets",
+        "edit_assets",
+        "view_portfolio",
+        "approve_work_orders",
+        "view_financials",
+        "view_health_scores"
+      ]
+    },
+    {
+      "role": "engineer",
+      "permissions": [
+        "manage_asset_technical_data",
+        "manage_digital_twin",
+        "review_faults",
+        "review_inspections",
+        "create_engineering_reports"
+      ]
+    },
+    {
+      "role": "o_and_m_manager",
+      "permissions": [
+        "manage_work_orders",
+        "assign_technicians",
+        "manage_spares",
+        "review_alarms",
+        "manage_maintenance_plans"
+      ]
+    },
+    {
+      "role": "technician",
+      "permissions": [
+        "view_assigned_work_orders",
+        "update_work_order_status",
+        "upload_site_photos",
+        "record_measurements",
+        "record_material_usage"
+      ]
+    },
+    {
+      "role": "finance_manager",
+      "permissions": [
+        "view_financials",
+        "manage_tariffs",
+        "manage_costs",
+        "run_financial_models",
+        "export_financial_reports"
+      ]
+    },
+    {
+      "role": "developer_project_manager",
+      "permissions": [
+        "manage_housing_projects",
+        "manage_unit_solar_status",
+        "manage_nem_workflow",
+        "view_handover_status"
+      ]
+    },
+    {
+      "role": "customer",
+      "permissions": [
+        "view_own_assets",
+        "view_generation",
+        "view_savings",
+        "view_alerts",
+        "view_service_history",
+        "download_reports"
+      ]
+    },
+    {
+      "role": "auditor",
+      "permissions": [
+        "read_only_access",
+        "download_audit_reports"
+      ]
+    }
+  ],
+  "core_entities": {
+    "tenant": {
+      "fields": [
+        "id",
+        "name",
+        "registration_number",
+        "address",
+        "contact_person",
+        "email",
+        "phone",
+        "subscription_plan",
+        "status",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "user": {
+      "fields": [
+        "id",
+        "tenant_id",
+        "full_name",
+        "email",
+        "phone",
+        "role",
+        "status",
+        "last_login_at",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "customer": {
+      "fields": [
+        "id",
+        "tenant_id",
+        "customer_type",
+        "name",
+        "identity_or_registration_number",
+        "email",
+        "phone",
+        "billing_address",
+        "service_address",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "site": {
+      "fields": [
+        "id",
+        "tenant_id",
+        "customer_id",
+        "site_name",
+        "site_code",
+        "address",
+        "latitude",
+        "longitude",
+        "site_type",
+        "grid_region",
+        "utility_provider",
+        "commissioning_date",
+        "status",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "pv_asset": {
+      "fields": [
+        "id",
+        "tenant_id",
+        "site_id",
+        "asset_name",
+        "asset_code",
+        "system_type",
+        "installed_capacity_kwp",
+        "ac_capacity_kw",
+        "interconnection_type",
+        "commissioning_date",
+        "design_life_years",
+        "current_status",
+        "monitoring_status",
+        "digital_twin_status",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "equipment": {
+      "fields": [
+        "id",
+        "asset_id",
+        "equipment_type",
+        "manufacturer",
+        "model",
+        "serial_number",
+        "rated_capacity",
+        "installation_date",
+        "warranty_start",
+        "warranty_end",
+        "location_reference",
+        "qr_code",
+        "status",
+        "metadata"
+      ]
+    },
+    "telemetry_reading": {
+      "fields": [
+        "id",
+        "asset_id",
+        "equipment_id",
+        "timestamp",
+        "metric_name",
+        "metric_value",
+        "unit",
+        "quality_flag",
+        "source",
+        "ingested_at"
+      ]
+    },
+    "alarm": {
+      "fields": [
+        "id",
+        "asset_id",
+        "equipment_id",
+        "alarm_code",
+        "severity",
+        "title",
+        "description",
+        "detected_at",
+        "acknowledged_at",
+        "resolved_at",
+        "status",
+        "recommended_action"
+      ]
+    },
+    "work_order": {
+      "fields": [
+        "id",
+        "asset_id",
+        "alarm_id",
+        "work_order_number",
+        "type",
+        "priority",
+        "description",
+        "assigned_to",
+        "scheduled_date",
+        "started_at",
+        "completed_at",
+        "status",
+        "labour_cost",
+        "material_cost",
+        "total_cost",
+        "findings",
+        "corrective_action"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "module_id": 1,
+      "name": "Asset Registry",
+      "purpose": "Maintain a complete digital register of all solar PV sites, systems, equipment, documents, warranties, and lifecycle records.",
+      "features": [
+        "Create and manage customers, sites, and PV assets",
+        "Register PV modules, inverters, meters, batteries, switchboards, mounting systems, sensors, and communications equipment",
+        "Store serial numbers, equipment specifications, commissioning records, and warranty dates",
+        "Generate QR codes for equipment and site identification",
+        "Upload single-line diagrams, layouts, datasheets, manuals, approvals, photographs, and certificates",
+        "Track asset ownership, custodian, EPC contractor, O&M provider, and utility account",
+        "Maintain document version control and audit history",
+        "Import assets via CSV, Excel, or API"
+      ],
+      "screens": [
+        "Asset portfolio list",
+        "Site map",
+        "Asset profile",
+        "Equipment register",
+        "Document repository",
+        "Warranty tracker",
+        "QR code scanner"
+      ],
+      "key_kpis": [
+        "Total assets",
+        "Total installed capacity",
+        "Assets by status",
+        "Warranties expiring within 90 days",
+        "Assets without active monitoring",
+        "Assets with incomplete records"
+      ]
+    },
+    {
+      "module_id": 2,
+      "name": "Digital Twin Dashboard",
+      "purpose": "Provide a virtual operational representation of each PV system using design data, real-time telemetry, weather information, and performance models.",
+      "features": [
+        "Display actual versus expected generation",
+        "Show DC and AC power, voltage, current, frequency, irradiation, temperature, and energy yield",
+        "Integrate inverter, meter, SCADA, IoT, and weather data",
+        "Calculate performance ratio, specific yield, availability, and loss categories",
+        "Display system topology from site to inverter, string, and module level where available",
+        "Run scenario simulations for weather, soiling, equipment outages, and degradation",
+        "Maintain model versions and calibration history",
+        "Visualise current operating state and predicted future state"
+      ],
+      "digital_twin_levels": [
+        "Portfolio",
+        "Site",
+        "PV system",
+        "Inverter",
+        "String",
+        "Module",
+        "Battery",
+        "Meter"
+      ],
+      "screens": [
+        "Portfolio command centre",
+        "Live site dashboard",
+        "System topology",
+        "Actual versus expected chart",
+        "Loss breakdown",
+        "Scenario simulator",
+        "Digital twin model settings"
+      ],
+      "key_kpis": [
+        "Current power",
+        "Daily energy",
+        "Monthly energy",
+        "Specific yield",
+        "Performance ratio",
+        "Availability",
+        "Expected versus actual variance",
+        "Estimated lost revenue"
+      ]
+    },
+    {
+      "module_id": 3,
+      "name": "Predictive Maintenance",
+      "purpose": "Use rules, statistics, and machine learning to identify probable failures and maintenance needs before major loss or downtime occurs.",
+      "features": [
+        "Detect abnormal inverter behaviour",
+        "Detect string underperformance and mismatch",
+        "Estimate degradation trends",
+        "Identify probable soiling, shading, clipping, and curtailment",
+        "Predict component failure probability",
+        "Generate recommended maintenance actions",
+        "Prioritise interventions by energy loss, safety risk, cost, and urgency",
+        "Create maintenance alerts and work orders automatically",
+        "Track prediction accuracy and model performance"
+      ],
+      "prediction_models": [
+        "Inverter fault probability",
+        "String underperformance classification",
+        "Module degradation forecast",
+        "Soiling loss estimate",
+        "Cleaning date optimisation",
+        "Battery state-of-health forecast",
+        "Energy yield forecast",
+        "Spare-parts demand forecast"
+      ],
+      "screens": [
+        "Predictive alerts",
+        "Failure probability dashboard",
+        "Degradation trends",
+        "Maintenance recommendations",
+        "Model performance",
+        "Prediction history"
+      ],
+      "key_kpis": [
+        "Predicted failures",
+        "Avoided downtime",
+        "Avoided energy loss",
+        "Prediction precision",
+        "Prediction recall",
+        "Maintenance cost avoided"
+      ]
+    },
+    {
+      "module_id": 4,
+      "name": "Drone Inspection",
+      "purpose": "Manage drone inspection missions and analyse visual and thermal imagery for PV defects.",
+      "features": [
+        "Create inspection missions",
+        "Upload RGB, thermal, electroluminescence, and orthomosaic images",
+        "Link images to site, row, string, inverter, or module",
+        "Detect hotspots, cracked modules, broken glass, delamination, vegetation, shading, and dirt",
+        "Review AI detections and confidence scores",
+        "Create annotated defect maps",
+        "Generate inspection reports",
+        "Convert confirmed defects into work orders",
+        "Maintain repeat inspection history for trend analysis"
+      ],
+      "defect_types": [
+        "Hotspot",
+        "Bypass diode failure",
+        "Cell crack",
+        "Broken glass",
+        "Delamination",
+        "Discoloration",
+        "Soiling",
+        "Vegetation obstruction",
+        "Shading",
+        "Loose cable",
+        "Mechanical damage",
+        "Unknown anomaly"
+      ],
+      "screens": [
+        "Inspection mission list",
+        "Drone image uploader",
+        "Image review and annotation",
+        "Thermal defect map",
+        "Defect register",
+        "Inspection report generator"
+      ],
+      "key_kpis": [
+        "Modules inspected",
+        "Defects detected",
+        "Critical defects",
+        "Estimated power loss",
+        "Inspection cost per MW",
+        "Defects resolved"
+      ]
+    },
+    {
+      "module_id": 5,
+      "name": "Maintenance Management",
+      "purpose": "Plan, assign, execute, verify, and report preventive and corrective maintenance activities.",
+      "features": [
+        "Create preventive, corrective, emergency, inspection, and warranty work orders",
+        "Assign technicians and contractors",
+        "Set priorities, due dates, and service-level targets",
+        "Use mobile-friendly technician forms",
+        "Record labour, materials, test readings, photos, and findings",
+        "Manage spare-parts inventory",
+        "Track maintenance contracts and schedules",
+        "Require digital sign-off and customer acknowledgement",
+        "Track repeat failures and root-cause analysis",
+        "Generate maintenance reports"
+      ],
+      "work_order_statuses": [
+        "draft",
+        "open",
+        "assigned",
+        "scheduled",
+        "in_progress",
+        "awaiting_parts",
+        "awaiting_approval",
+        "completed",
+        "verified",
+        "closed",
+        "cancelled"
+      ],
+      "screens": [
+        "Maintenance calendar",
+        "Work order board",
+        "Technician mobile view",
+        "Spare-parts inventory",
+        "Maintenance checklist",
+        "Root-cause analysis",
+        "Service report"
+      ],
+      "key_kpis": [
+        "Open work orders",
+        "Overdue work orders",
+        "Mean time to acknowledge",
+        "Mean time to repair",
+        "First-time fix rate",
+        "Maintenance cost per kWp",
+        "Spare-parts stock value"
+      ]
+    },
+    {
+      "module_id": 6,
+      "name": "Financial Dashboard",
+      "purpose": "Measure the financial performance of PV assets and evaluate investment, operating, and repowering decisions.",
+      "features": [
+        "Track project capital expenditure and operating expenditure",
+        "Configure tariffs, export rates, savings rates, escalation, and incentives",
+        "Calculate revenue, savings, NPV, IRR, payback, ROI, and LCOE",
+        "Compare budget versus actual performance",
+        "Calculate financial impact of downtime and underperformance",
+        "Forecast cash flow",
+        "Model debt and equity structures",
+        "Run repowering and equipment replacement scenarios",
+        "Export management and board reports"
+      ],
+      "financial_inputs": [
+        "System cost",
+        "Installed capacity",
+        "Debt percentage",
+        "Equity percentage",
+        "Interest rate",
+        "Loan tenure",
+        "Tariff",
+        "Tariff escalation",
+        "Annual degradation",
+        "Annual O&M cost",
+        "Insurance cost",
+        "Replacement cost",
+        "Tax assumptions",
+        "Discount rate"
+      ],
+      "screens": [
+        "Financial overview",
+        "Cash-flow forecast",
+        "Revenue and savings",
+        "NPV and IRR model",
+        "Budget versus actual",
+        "Downtime cost",
+        "Repowering scenario"
+      ],
+      "key_kpis": [
+        "Lifetime revenue",
+        "Annual savings",
+        "NPV",
+        "IRR",
+        "ROI",
+        "Simple payback",
+        "LCOE",
+        "Operating margin",
+        "Lost revenue"
+      ]
+    },
+    {
+      "module_id": 7,
+      "name": "Asset Health Score",
+      "purpose": "Provide a simple 0-to-100 score indicating the technical and operational condition of each PV asset.",
+      "features": [
+        "Calculate health scores at portfolio, site, system, inverter, and component level",
+        "Apply configurable weightings",
+        "Show score history and deterioration trends",
+        "Explain score deductions",
+        "Generate intervention priorities",
+        "Benchmark similar systems",
+        "Use traffic-light classifications",
+        "Link health score changes to alarms, work orders, and inspections"
+      ],
+      "default_score_weights": {
+        "performance_ratio": 20,
+        "availability": 15,
+        "fault_frequency": 15,
+        "degradation_rate": 15,
+        "inverter_condition": 10,
+        "module_condition": 10,
+        "maintenance_compliance": 10,
+        "data_quality": 5
+      },
+      "score_bands": [
+        {
+          "label": "Excellent",
+          "minimum": 90,
+          "maximum": 100
+        },
+        {
+          "label": "Good",
+          "minimum": 75,
+          "maximum": 89
+        },
+        {
+          "label": "Attention Required",
+          "minimum": 60,
+          "maximum": 74
+        },
+        {
+          "label": "Poor",
+          "minimum": 40,
+          "maximum": 59
+        },
+        {
+          "label": "Critical",
+          "minimum": 0,
+          "maximum": 39
+        }
+      ],
+      "screens": [
+        "Portfolio health map",
+        "Asset health profile",
+        "Score breakdown",
+        "Trend chart",
+        "Benchmark comparison",
+        "Priority action list"
+      ],
+      "key_kpis": [
+        "Average portfolio health score",
+        "Critical assets",
+        "Assets deteriorating",
+        "Top score deductions",
+        "Health score after intervention"
+      ]
+    },
+    {
+      "module_id": 8,
+      "name": "Carbon, REC and ESG Dashboard",
+      "purpose": "Calculate environmental benefits, support REC tracking, and produce ESG and sustainability reporting.",
+      "features": [
+        "Calculate avoided grid electricity and estimated avoided emissions",
+        "Configure grid emission factors by jurisdiction and year",
+        "Calculate cumulative CO2e avoidance",
+        "Track renewable energy generation eligible for REC issuance",
+        "Maintain REC batches, status, serial numbers, ownership, and retirement records",
+        "Generate ESG, sustainability, and carbon reports",
+        "Support portfolio and customer-level reporting",
+        "Maintain evidence and audit trails",
+        "Export data for external registries and reporting platforms"
+      ],
+      "rec_statuses": [
+        "estimated",
+        "eligible",
+        "submitted",
+        "verified",
+        "issued",
+        "transferred",
+        "retired",
+        "rejected"
+      ],
+      "screens": [
+        "Carbon overview",
+        "Emission factor settings",
+        "REC eligibility tracker",
+        "REC batch register",
+        "ESG report builder",
+        "Audit evidence repository"
+      ],
+      "key_kpis": [
+        "Renewable energy generated",
+        "CO2e avoided",
+        "Estimated RECs",
+        "Issued RECs",
+        "Retired RECs",
+        "Carbon benefit by customer",
+        "Portfolio ESG contribution"
+      ]
+    },
+    {
+      "module_id": 9,
+      "name": "Customer Portal",
+      "purpose": "Provide customers with secure access to generation, savings, alerts, documents, service records, and environmental benefits.",
+      "features": [
+        "Customer login with access restricted to owned assets",
+        "Daily, monthly, and annual generation charts",
+        "Estimated bill savings and revenue",
+        "Current system status",
+        "Active alerts and maintenance updates",
+        "Maintenance history",
+        "Warranty and equipment information",
+        "Download invoices, reports, certificates, and service documents",
+        "Submit service requests",
+        "Receive email, SMS, or WhatsApp notifications",
+        "Display carbon savings and REC information"
+      ],
+      "screens": [
+        "Customer home",
+        "Generation and savings",
+        "System status",
+        "Alerts",
+        "Service requests",
+        "Maintenance history",
+        "Documents",
+        "Carbon impact"
+      ],
+      "key_kpis": [
+        "Customer portal adoption",
+        "Monthly active users",
+        "Service requests",
+        "Average response time",
+        "Customer satisfaction score"
+      ]
+    },
+    {
+      "module_id": 10,
+      "name": "Housing Developer Solar Portfolio",
+      "purpose": "Track solar installation, NEM approval, utility submissions, customer handover, warranty, and service status for each housing unit.",
+      "features": [
+        "Create housing development projects, phases, blocks, and units",
+        "Assign PV system size and equipment package to each unit",
+        "Track installation milestones",
+        "Track NEM application and approval workflow",
+        "Store utility account, meter, inverter, module, and certificate details",
+        "Track purchaser details and ownership transfer",
+        "Manage handover checklists",
+        "Track warranty commencement and expiry",
+        "Track service and defect history after handover",
+        "Provide project-level dashboards and exception reports",
+        "Support bulk upload for housing units"
+      ],
+      "unit_statuses": [
+        "not_started",
+        "design_confirmed",
+        "equipment_allocated",
+        "installation_in_progress",
+        "installation_completed",
+        "testing_completed",
+        "utility_submission_pending",
+        "utility_submission_submitted",
+        "utility_approval_received",
+        "meter_installed",
+        "commissioned",
+        "handover_pending",
+        "handed_over",
+        "under_warranty",
+        "closed"
+      ],
+      "screens": [
+        "Development project dashboard",
+        "Unit solar tracker",
+        "NEM workflow tracker",
+        "Equipment allocation",
+        "Handover checklist",
+        "Warranty tracker",
+        "Defect and service history",
+        "Project exception report"
+      ],
+      "key_kpis": [
+        "Total housing units",
+        "Systems installed",
+        "NEM applications submitted",
+        "NEM approvals received",
+        "Meters installed",
+        "Units commissioned",
+        "Units handed over",
+        "Outstanding defects"
+      ]
+    }
+  ],
+  "cross_module_workflows": [
+    {
+      "name": "Alarm-to-Resolution",
+      "steps": [
+        "Telemetry anomaly detected",
+        "Alarm created",
+        "Predictive maintenance model assigns failure probability",
+        "Asset health score updated",
+        "Work order created",
+        "Technician assigned",
+        "Repair completed",
+        "Performance verified",
+        "Alarm resolved",
+        "Financial loss avoided calculated",
+        "Customer notified"
+      ]
+    },
+    {
+      "name": "Drone Defect-to-Work Order",
+      "steps": [
+        "Inspection mission created",
+        "Images uploaded",
+        "AI detects potential defect",
+        "Engineer confirms defect",
+        "Affected equipment linked",
+        "Estimated energy loss calculated",
+        "Work order created",
+        "Repair completed",
+        "Follow-up image uploaded",
+        "Defect closed"
+      ]
+    },
+    {
+      "name": "Housing Unit Solar Handover",
+      "steps": [
+        "Unit created",
+        "PV package assigned",
+        "Equipment serial numbers allocated",
+        "Installation completed",
+        "Testing and commissioning recorded",
+        "Utility submission completed",
+        "Approval and meter information recorded",
+        "Customer account created",
+        "Handover checklist signed",
+        "Warranty activated",
+        "Asset transferred to customer portal"
+      ]
+    }
+  ],
+  "integrations": {
+    "monitoring_and_iot": [
+      "Inverter APIs",
+      "Smart meters",
+      "SCADA",
+      "Modbus TCP",
+      "MQTT",
+      "Weather stations",
+      "IoT gateways"
+    ],
+    "geospatial": [
+      "Google Maps",
+      "OpenStreetMap",
+      "GIS layers",
+      "Drone orthomosaics"
+    ],
+    "communications": [
+      "Email",
+      "SMS",
+      "WhatsApp Business API",
+      "Push notifications"
+    ],
+    "business_systems": [
+      "Accounting software",
+      "ERP",
+      "CRM",
+      "Document management",
+      "Payment gateway"
+    ],
+    "data_exchange": [
+      "REST API",
+      "GraphQL API",
+      "Webhooks",
+      "CSV",
+      "Excel",
+      "JSON",
+      "JSON-LD"
+    ]
+  },
+  "api_design": {
+    "base_path": "/api/v1",
+    "authentication": "JWT with refresh tokens and optional SSO",
+    "sample_endpoints": [
+      {
+        "method": "GET",
+        "path": "/assets",
+        "purpose": "List assets"
+      },
+      {
+        "method": "POST",
+        "path": "/assets",
+        "purpose": "Create asset"
+      },
+      {
+        "method": "GET",
+        "path": "/assets/{assetId}",
+        "purpose": "Get asset details"
+      },
+      {
+        "method": "POST",
+        "path": "/telemetry/ingest",
+        "purpose": "Ingest telemetry data"
+      },
+      {
+        "method": "GET",
+        "path": "/assets/{assetId}/dashboard",
+        "purpose": "Get digital twin dashboard data"
+      },
+      {
+        "method": "GET",
+        "path": "/assets/{assetId}/predictions",
+        "purpose": "Get predictive maintenance results"
+      },
+      {
+        "method": "POST",
+        "path": "/inspections",
+        "purpose": "Create inspection mission"
+      },
+      {
+        "method": "POST",
+        "path": "/work-orders",
+        "purpose": "Create work order"
+      },
+      {
+        "method": "GET",
+        "path": "/assets/{assetId}/financials",
+        "purpose": "Get financial results"
+      },
+      {
+        "method": "GET",
+        "path": "/assets/{assetId}/health-score",
+        "purpose": "Get health score"
+      },
+      {
+        "method": "GET",
+        "path": "/assets/{assetId}/carbon",
+        "purpose": "Get carbon and REC data"
+      },
+      {
+        "method": "GET",
+        "path": "/developer-projects/{projectId}/units",
+        "purpose": "List housing units"
+      }
+    ]
+  },
+  "database_recommendation": {
+    "primary_database": "PostgreSQL",
+    "time_series_database": "TimescaleDB extension or InfluxDB",
+    "object_storage": "S3-compatible object storage",
+    "cache": "Redis",
+    "search": "PostgreSQL full-text search or OpenSearch",
+    "recommended_architecture": "Modular monolith for MVP, evolving to services as telemetry and AI workloads scale"
+  },
+  "recommended_technology_stack": {
+    "frontend": "React or Next.js with TypeScript",
+    "backend": "Node.js with NestJS or Python with FastAPI",
+    "mobile": "Progressive Web App initially; React Native or Flutter later",
+    "database": "PostgreSQL with TimescaleDB",
+    "ai_and_analytics": "Python, pandas, scikit-learn, PyTorch or TensorFlow",
+    "mapping": "Mapbox or Google Maps",
+    "authentication": "Auth0, Clerk, Firebase Auth, or custom JWT",
+    "deployment": "Replit for prototype; cloud production deployment on AWS, Azure, Google Cloud, or equivalent",
+    "reporting": "Server-generated PDF and Excel exports"
+  },
+  "ai_governance": {
+    "requirements": [
+      "Show model version and prediction timestamp",
+      "Show confidence score for every AI-generated alert",
+      "Require human confirmation for critical maintenance decisions",
+      "Track false positives and false negatives",
+      "Retain training dataset provenance",
+      "Allow model rollback",
+      "Separate advisory predictions from automated control"
+    ]
+  },
+  "security_and_compliance": {
+    "controls": [
+      "Role-based access control",
+      "Tenant-level data isolation",
+      "Multi-factor authentication",
+      "Encryption in transit and at rest",
+      "API rate limiting",
+      "Audit logs",
+      "Backup and disaster recovery",
+      "Device authentication for IoT gateways",
+      "Secure secrets management",
+      "File malware scanning",
+      "Session timeout",
+      "Data retention policies",
+      "Incident response procedures"
+    ],
+    "cybersecurity_principles": [
+      "Least privilege",
+      "Zero-trust access",
+      "Network segmentation",
+      "Signed firmware and secure device updates",
+      "Monitoring of abnormal login and data activity",
+      "No direct remote control of critical plant equipment in the MVP"
+    ],
+    "privacy": [
+      "Malaysia PDPA-aware data handling",
+      "Customer consent for personal data",
+      "Configurable data retention",
+      "Export and deletion workflows"
+    ]
+  },
+  "notifications": {
+    "channels": [
+      "in_app",
+      "email",
+      "sms",
+      "whatsapp",
+      "push"
+    ],
+    "events": [
+      "Critical alarm",
+      "Predicted failure",
+      "Work order assigned",
+      "Work order overdue",
+      "Warranty expiring",
+      "Monitoring offline",
+      "Health score deterioration",
+      "NEM status change",
+      "Customer service request",
+      "Inspection completed"
+    ]
+  },
+  "reporting": [
+    "Portfolio performance report",
+    "Site performance report",
+    "Monthly O&M report",
+    "Alarm and downtime report",
+    "Predictive maintenance report",
+    "Drone inspection report",
+    "Financial performance report",
+    "Asset health report",
+    "Carbon and ESG report",
+    "REC register report",
+    "Housing development solar progress report",
+    "Customer generation and savings statement"
+  ],
+  "mvp_scope": {
+    "phase_1": {
+      "name": "Core Asset and O&M Platform",
+      "modules": [
+        1,
+        5,
+        9,
+        10
+      ],
+      "duration_estimate": "8 to 12 weeks",
+      "deliverables": [
+        "User and tenant management",
+        "Asset registry",
+        "Document storage",
+        "Work orders",
+        "Customer portal",
+        "Housing developer tracker",
+        "Basic reports"
+      ]
+    },
+    "phase_2": {
+      "name": "Monitoring and Digital Twin Foundation",
+      "modules": [
+        2,
+        7
+      ],
+      "duration_estimate": "8 to 12 weeks",
+      "deliverables": [
+        "Telemetry ingestion",
+        "Live dashboards",
+        "Expected versus actual generation",
+        "Performance ratio",
+        "Asset health score"
+      ]
+    },
+    "phase_3": {
+      "name": "Financial, Carbon and Predictive Analytics",
+      "modules": [
+        3,
+        6,
+        8
+      ],
+      "duration_estimate": "10 to 16 weeks",
+      "deliverables": [
+        "Financial model",
+        "Carbon reporting",
+        "REC tracking",
+        "Predictive maintenance models"
+      ]
+    },
+    "phase_4": {
+      "name": "Drone and Advanced Digital Twin",
+      "modules": [
+        4
+      ],
+      "duration_estimate": "12 to 20 weeks",
+      "deliverables": [
+        "Drone mission management",
+        "Image annotation",
+        "Thermal defect detection",
+        "Advanced scenario simulation"
+      ]
+    }
+  },
+  "non_functional_requirements": {
+    "availability_target": "99.5% for MVP and 99.9% for production scale",
+    "responsive_design": true,
+    "mobile_first_technician_workflows": true,
+    "offline_mode": "Required for field technician forms in later release",
+    "telemetry_scalability": "Support at least 1 million telemetry records per day in initial production",
+    "data_export": [
+      "CSV",
+      "Excel",
+      "PDF",
+      "JSON"
+    ],
+    "auditability": "All changes to critical asset, financial, inspection, and work-order data must be logged"
+  },
+  "acceptance_criteria": [
+    "A tenant administrator can create users, customers, sites, and PV assets.",
+    "An engineer can register all major PV equipment and upload documents.",
+    "The system can ingest telemetry and display live and historical performance.",
+    "The system can create alarms and convert them into work orders.",
+    "A technician can complete a work order using a mobile-friendly form.",
+    "A finance user can calculate ROI, NPV, IRR, payback, and LCOE.",
+    "The system can calculate and explain an asset health score.",
+    "The system can calculate estimated CO2e avoidance and REC potential.",
+    "A customer can view only their own assets, generation, savings, and service history.",
+    "A housing developer can track installation, NEM, meter, commissioning, handover, and warranty status for every unit."
+  ]
+}

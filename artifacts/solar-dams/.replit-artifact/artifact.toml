@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "GBJ SolarDAMS"
+version = "1.0.0"
+id = "artifacts/solar-dams"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20874
+
+[services.development]
+run = "pnpm --filter @workspace/solar-dams run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/solar-dams", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/solar-dams/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20874"
+BASE_PATH = "/"
