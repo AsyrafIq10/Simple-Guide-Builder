@@ -1,19 +1,18 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
-import { useListCustomers, useCreateCustomer } from "@workspace/api-client-react";
+import { useListCustomers, createCustomer, getListCustomersQueryKey } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Plus, Search, Building2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
-import { useQueryClient } from "@tanstack/react-query";
-import { getListCustomersQueryKey } from "@workspace/api-client-react";
 
 export default function Customers() {
   const { data: customers, isLoading } = useListCustomers();
   const [search, setSearch] = useState("");
   const [isSheetOpen, setSheetOpen] = useState(false);
 
-  const filtered = customers?.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = customers?.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.email.toLowerCase().includes(search.toLowerCase()) ||
     c.customerType.toLowerCase().includes(search.toLowerCase())
   );
@@ -32,10 +31,10 @@ export default function Customers() {
 
       <div className="flex items-center border border-border bg-card rounded-md px-3 py-2 w-full max-w-sm">
         <Search className="size-4 text-muted-foreground mr-2" />
-        <input 
-          type="text" 
-          className="bg-transparent border-none outline-none flex-1 text-sm" 
-          placeholder="Search customers..." 
+        <input
+          type="text"
+          className="bg-transparent border-none outline-none flex-1 text-sm"
+          placeholder="Search customers..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -99,22 +98,24 @@ export default function Customers() {
   );
 }
 
-function CreateCustomerSheet({ open, onClose }: { open: boolean, onClose: () => void }) {
+function CreateCustomerSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const createCustomer = useCreateCustomer();
+  const mutation = useMutation({
+    mutationFn: (data: Parameters<typeof createCustomer>[0]) => createCustomer(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
+      onClose();
+      setFormData({ name: "", email: "", phone: "", customerType: "commercial", identityOrRegistrationNumber: "", billingAddress: "", serviceAddress: "" });
+    },
+  });
   const [formData, setFormData] = useState({
-    name: "", email: "", phone: "", customerType: "commercial" as const, identityOrRegistrationNumber: "", billingAddress: "", serviceAddress: ""
+    name: "", email: "", phone: "", customerType: "commercial" as const,
+    identityOrRegistrationNumber: "", billingAddress: "", serviceAddress: "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createCustomer.mutate({ data: formData }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
-        onClose();
-        setFormData({ name: "", email: "", phone: "", customerType: "commercial", identityOrRegistrationNumber: "", billingAddress: "", serviceAddress: "" });
-      }
-    });
+    mutation.mutate(formData);
   };
 
   return (
@@ -122,10 +123,10 @@ function CreateCustomerSheet({ open, onClose }: { open: boolean, onClose: () => 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">Customer Type</label>
-          <select 
-            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+          <select
+            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
             value={formData.customerType}
-            onChange={e => setFormData({...formData, customerType: e.target.value as any})}
+            onChange={e => setFormData({ ...formData, customerType: e.target.value as any })}
           >
             <option value="commercial">Commercial</option>
             <option value="residential">Residential</option>
@@ -135,33 +136,33 @@ function CreateCustomerSheet({ open, onClose }: { open: boolean, onClose: () => 
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Name</label>
-          <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-            value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+          <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Registration / IC No.</label>
-          <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-            value={formData.identityOrRegistrationNumber} onChange={e => setFormData({...formData, identityOrRegistrationNumber: e.target.value})} />
+          <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.identityOrRegistrationNumber} onChange={e => setFormData({ ...formData, identityOrRegistrationNumber: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Email</label>
-          <input required type="email" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-            value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+          <input required type="email" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Phone</label>
-          <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-            value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Billing Address</label>
-          <textarea className="w-full p-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-primary min-h-[80px]"
-            value={formData.billingAddress} onChange={e => setFormData({...formData, billingAddress: e.target.value})} />
+          <textarea className="w-full p-3 rounded-md border border-input bg-background text-sm outline-none min-h-[80px]"
+            value={formData.billingAddress} onChange={e => setFormData({ ...formData, billingAddress: e.target.value })} />
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={createCustomer.isPending}>
-            {createCustomer.isPending ? "Creating..." : "Save Customer"}
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Creating..." : "Save Customer"}
           </Button>
         </div>
       </form>

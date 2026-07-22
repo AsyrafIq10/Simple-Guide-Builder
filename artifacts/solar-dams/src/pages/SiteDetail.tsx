@@ -1,19 +1,18 @@
 import React, { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useGetSite, useListAssets, useGetCustomer, useUpdateSite } from "@workspace/api-client-react";
-import { MapPin, Navigation, Zap, Edit, ArrowLeft, Building2 } from "lucide-react";
+import { useGetSite, useListAssets, useGetCustomer, updateSite, getGetSiteQueryKey, getGetCustomerQueryKey } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MapPin, Zap, Edit, ArrowLeft, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetSiteQueryKey } from "@workspace/api-client-react";
 
 export default function SiteDetail() {
   const { id } = useParams();
   const siteId = Number(id);
   const { data: site, isLoading: siteLoading } = useGetSite(siteId, { query: { enabled: !!siteId, queryKey: getGetSiteQueryKey(siteId) } });
   const { data: assets, isLoading: assetsLoading } = useListAssets();
-  const { data: customer } = useGetCustomer(site?.customerId || 0, { query: { enabled: !!site?.customerId, queryKey: getGetSiteQueryKey(site?.customerId || 0) } });
-  
+  const { data: customer } = useGetCustomer(site?.customerId || 0, { query: { enabled: !!site?.customerId, queryKey: getGetCustomerQueryKey(site?.customerId || 0) } });
+
   const [isEditOpen, setEditOpen] = useState(false);
 
   if (siteLoading || assetsLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading...</div>;
@@ -41,8 +40,8 @@ export default function SiteDetail() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight">{site.siteName}</h1>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border
-                ${site.status === 'active' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' : 
-                  site.status === 'under_construction' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 
+                ${site.status === 'active' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
+                  site.status === 'under_construction' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
                   'bg-muted text-muted-foreground border-border'}
               `}>
                 {site.status.replace('_', ' ')}
@@ -69,7 +68,7 @@ export default function SiteDetail() {
                 <div className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Address</div>
                 <div className="text-foreground">{site.address}</div>
               </div>
-              
+
               {customer && (
                 <div className="pt-3 border-t border-border">
                   <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Owned By</div>
@@ -81,7 +80,7 @@ export default function SiteDetail() {
                   </Link>
                 </div>
               )}
-              
+
               {(site.gridRegion || site.utilityProvider) && (
                 <div className="pt-3 border-t border-border grid grid-cols-2 gap-4">
                   {site.gridRegion && (
@@ -140,8 +139,8 @@ export default function SiteDetail() {
                       </div>
                     </div>
                     <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded border
-                      ${asset.currentStatus === 'operational' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' : 
-                        asset.currentStatus === 'fault' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                      ${asset.currentStatus === 'operational' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
+                        asset.currentStatus === 'fault' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
                         asset.currentStatus === 'offline' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
                         'bg-muted text-muted-foreground border-border'}
                     `}>
@@ -159,26 +158,27 @@ export default function SiteDetail() {
   );
 }
 
-function EditSiteSheet({ site, open, onClose }: { site: any, open: boolean, onClose: () => void }) {
+function EditSiteSheet({ site, open, onClose }: { site: any; open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const updateSite = useUpdateSite({ siteId: site.id });
+  const mutation = useMutation({
+    mutationFn: (data: any) => updateSite(site.id, data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(getGetSiteQueryKey(site.id), updated);
+      onClose();
+    },
+  });
   const [formData, setFormData] = useState({
     siteName: site.siteName,
     siteCode: site.siteCode,
     address: site.address,
     status: site.status,
     gridRegion: site.gridRegion || "",
-    utilityProvider: site.utilityProvider || ""
+    utilityProvider: site.utilityProvider || "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateSite.mutate({ data: formData }, {
-      onSuccess: () => {
-        queryClient.setQueryData(getGetSiteQueryKey(site.id), (old: any) => ({ ...old, ...formData }));
-        onClose();
-      }
-    });
+    mutation.mutate(formData);
   };
 
   return (
@@ -187,13 +187,13 @@ function EditSiteSheet({ site, open, onClose }: { site: any, open: boolean, onCl
         <div className="space-y-2">
           <label className="text-sm font-medium">Site Name</label>
           <input required type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.siteName} onChange={e => setFormData({...formData, siteName: e.target.value})} />
+            value={formData.siteName} onChange={e => setFormData({ ...formData, siteName: e.target.value })} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
-          <select 
+          <select
             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-            value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}
+            value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}
           >
             <option value="active">Active</option>
             <option value="under_construction">Under Construction</option>
@@ -205,22 +205,22 @@ function EditSiteSheet({ site, open, onClose }: { site: any, open: boolean, onCl
           <div className="space-y-2">
             <label className="text-sm font-medium">Grid Region</label>
             <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.gridRegion} onChange={e => setFormData({...formData, gridRegion: e.target.value})} />
+              value={formData.gridRegion} onChange={e => setFormData({ ...formData, gridRegion: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Utility Provider</label>
             <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
-              value={formData.utilityProvider} onChange={e => setFormData({...formData, utilityProvider: e.target.value})} />
+              value={formData.utilityProvider} onChange={e => setFormData({ ...formData, utilityProvider: e.target.value })} />
           </div>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Address</label>
           <textarea required className="w-full p-3 rounded-md border border-input bg-background text-sm min-h-[80px] outline-none"
-            value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+            value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
         </div>
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={updateSite.isPending}>Save Changes</Button>
+          <Button type="submit" disabled={mutation.isPending}>Save Changes</Button>
         </div>
       </form>
     </SideSheet>

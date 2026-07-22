@@ -118,9 +118,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="px-3 py-1 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20 text-xs font-bold uppercase tracking-widest hidden sm:block">
-              Demo Mode
-            </div>
             <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
               JS
             </div>
