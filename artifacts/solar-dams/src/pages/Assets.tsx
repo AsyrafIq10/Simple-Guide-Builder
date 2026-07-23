@@ -290,6 +290,11 @@ function AssetSheet(
             </select>
           </div>
         </div>
+        {mutation.error && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/30 text-destructive text-sm px-3 py-2">
+            {(mutation.error as Error).message || "Failed to save. Please try again."}
+          </div>
+        )}
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={props.onClose}>Cancel</Button>
           <Button type="submit" disabled={mutation.isPending}>{submitLabel}</Button>
