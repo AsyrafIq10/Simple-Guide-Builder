@@ -1,10 +1,126 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useParams, Link } from "wouter";
 import { useGetSite, useListAssets, useGetCustomer, updateSite, getGetSiteQueryKey, getGetCustomerQueryKey } from "@workspace/api-client-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MapPin, Zap, Edit, ArrowLeft, Building2 } from "lucide-react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { MapPin, Zap, Edit, ArrowLeft, Building2, Camera, FileText, Upload, Trash2, ExternalLink, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
+
+const BASE = "/api";
+
+async function listAttachments(entityType: string, entityId: number) {
+  const r = await fetch(`${BASE}/attachments?entityType=${entityType}&entityId=${entityId}`);
+  if (!r.ok) throw new Error("Failed to load attachments");
+  return r.json() as Promise<any[]>;
+}
+
+async function deleteAttachment(id: number) {
+  await fetch(`${BASE}/attachments/${id}`, { method: "DELETE" });
+}
+
+function useAttachments(entityType: string, entityId: number) {
+  const qc = useQueryClient();
+  const key = ["attachments", entityType, entityId];
+  const query = useQuery({ queryKey: key, queryFn: () => listAttachments(entityType, entityId), enabled: !!entityId });
+  const invalidate = () => qc.invalidateQueries({ queryKey: key });
+  return { ...query, invalidate };
+}
+
+function AttachmentUploader({
+  entityType, entityId, category, onDone
+}: { entityType: string; entityId: number; category: string; onDone: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    setError(null);
+    try {
+      // Step 1: get presigned URL
+      const urlRes = await fetch(`${BASE}/storage/uploads/request-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error("Could not get upload URL");
+      const { uploadURL, objectPath } = await urlRes.json();
+
+      // Step 2: upload directly to GCS
+      const putRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Upload to storage failed");
+
+      // Step 3: save metadata
+      const attRes = await fetch(`${BASE}/attachments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityType, entityId, category, fileName: file.name, objectPath, mimeType: file.type }),
+      });
+      if (!attRes.ok) throw new Error("Failed to save attachment");
+      onDone();
+    } catch (e: any) {
+      setError(e.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <input ref={inputRef} type="file"
+        accept={category === "photo" ? "image/*" : "image/*,application/pdf,.dwg,.dxf,.svg"}
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }}
+      />
+      <Button size="sm" variant="outline" onClick={() => inputRef.current?.click()} disabled={uploading}>
+        <Upload className="size-3 mr-2" />{uploading ? "Uploading..." : `Add ${category === "photo" ? "Photo" : "Drawing"}`}
+      </Button>
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+    </div>
+  );
+}
+
+function AttachmentGrid({ attachments, onDelete }: { attachments: any[]; onDelete: (id: number) => void }) {
+  if (attachments.length === 0) return (
+    <div className="py-8 text-center text-muted-foreground text-sm">No files uploaded yet.</div>
+  );
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {attachments.map(att => {
+        const isImage = att.mimeType?.startsWith("image/");
+        const url = `/api/storage${att.objectPath}`;
+        return (
+          <div key={att.id} className="group relative border border-border rounded-lg overflow-hidden bg-muted/20">
+            {isImage ? (
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <img src={url} alt={att.fileName} className="w-full h-28 object-cover" />
+              </a>
+            ) : (
+              <a href={url} target="_blank" rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center h-28 gap-2 hover:bg-muted/40 transition-colors">
+                <FileText className="size-8 text-muted-foreground" />
+                <span className="text-xs text-center text-muted-foreground px-2 line-clamp-2">{att.fileName}</span>
+              </a>
+            )}
+            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button size="icon" variant="destructive" className="size-6"
+                onClick={() => onDelete(att.id)}>
+                <Trash2 className="size-3" />
+              </Button>
+            </div>
+            <div className="px-2 py-1 border-t border-border">
+              <p className="text-[10px] text-muted-foreground truncate">{att.fileName}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function SiteDetail() {
   const { id } = useParams();
@@ -12,13 +128,23 @@ export default function SiteDetail() {
   const { data: site, isLoading: siteLoading } = useGetSite(siteId, { query: { enabled: !!siteId, queryKey: getGetSiteQueryKey(siteId) } });
   const { data: assets, isLoading: assetsLoading } = useListAssets();
   const { data: customer } = useGetCustomer(site?.customerId || 0, { query: { enabled: !!site?.customerId, queryKey: getGetCustomerQueryKey(site?.customerId || 0) } });
-
+  const { data: photos, invalidate: invalidatePhotos } = useAttachments("site", siteId);
+  const { data: drawings, invalidate: invalidateDrawings } = useAttachments("site", siteId);
+  const [attTab, setAttTab] = useState<"photo" | "drawing">("photo");
   const [isEditOpen, setEditOpen] = useState(false);
+
+  const handleDeleteAtt = async (id: number) => {
+    if (!window.confirm("Delete this file?")) return;
+    await deleteAttachment(id);
+    invalidatePhotos();
+    invalidateDrawings();
+  };
 
   if (siteLoading || assetsLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading...</div>;
   if (!site) return <div className="p-8 text-destructive font-bold">Site not found.</div>;
 
   const siteAssets = assets?.filter(a => a.siteId === siteId) || [];
+  const filteredAtt = (attTab === "photo" ? photos : drawings)?.filter(a => a.category === attTab) ?? [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -69,6 +195,24 @@ export default function SiteDetail() {
                 <div className="text-foreground">{site.address}</div>
               </div>
 
+              {(site.latitude != null && site.longitude != null) && (
+                <div className="pt-3 border-t border-border">
+                  <div className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider flex items-center gap-1">
+                    <Navigation className="size-3" /> GPS Coordinates
+                  </div>
+                  <div className="font-mono text-xs text-foreground mb-2">
+                    {Number(site.latitude).toFixed(6)}, {Number(site.longitude).toFixed(6)}
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps?q=${site.latitude},${site.longitude}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="size-3" /> Open in Google Maps
+                  </a>
+                </div>
+              )}
+
               {customer && (
                 <div className="pt-3 border-t border-border">
                   <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Owned By</div>
@@ -97,6 +241,36 @@ export default function SiteDetail() {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Attachments */}
+          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-muted/20 px-4 py-3 border-b border-border flex items-center justify-between">
+              <span className="font-semibold text-sm">Attachments</span>
+              <AttachmentUploader
+                entityType="site" entityId={siteId} category={attTab}
+                onDone={() => { invalidatePhotos(); invalidateDrawings(); }}
+              />
+            </div>
+            <div className="flex border-b border-border">
+              <button
+                onClick={() => setAttTab("photo")}
+                className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5
+                  ${attTab === "photo" ? "bg-primary/10 text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Camera className="size-3" /> Photos
+              </button>
+              <button
+                onClick={() => setAttTab("drawing")}
+                className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5
+                  ${attTab === "drawing" ? "bg-primary/10 text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <FileText className="size-3" /> Drawings
+              </button>
+            </div>
+            <div className="p-4">
+              <AttachmentGrid attachments={filteredAtt} onDelete={handleDeleteAtt} />
             </div>
           </div>
         </div>
@@ -174,11 +348,17 @@ function EditSiteSheet({ site, open, onClose }: { site: any; open: boolean; onCl
     status: site.status,
     gridRegion: site.gridRegion || "",
     utilityProvider: site.utilityProvider || "",
+    latitude: site.latitude != null ? String(site.latitude) : "",
+    longitude: site.longitude != null ? String(site.longitude) : "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(formData);
+    mutation.mutate({
+      ...formData,
+      latitude: formData.latitude ? Number(formData.latitude) : undefined,
+      longitude: formData.longitude ? Number(formData.longitude) : undefined,
+    });
   };
 
   return (
@@ -213,11 +393,28 @@ function EditSiteSheet({ site, open, onClose }: { site: any; open: boolean; onCl
               value={formData.utilityProvider} onChange={e => setFormData({ ...formData, utilityProvider: e.target.value })} />
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-1"><Navigation className="size-3" /> Latitude</label>
+            <input type="number" step="0.000001" placeholder="3.140853" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none font-mono"
+              value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Longitude</label>
+            <input type="number" step="0.000001" placeholder="101.686855" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none font-mono"
+              value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: e.target.value })} />
+          </div>
+        </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Address</label>
           <textarea required className="w-full p-3 rounded-md border border-input bg-background text-sm min-h-[80px] outline-none"
             value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
         </div>
+        {mutation.error && (
+          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            {(mutation.error as any)?.message || "Failed to save changes."}
+          </div>
+        )}
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={mutation.isPending}>Save Changes</Button>

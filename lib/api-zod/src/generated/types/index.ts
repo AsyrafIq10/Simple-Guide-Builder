@@ -6,6 +6,12 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './attachment';
+export * from './attachmentCategory';
+export * from './attachmentEntityType';
+export * from './attachmentInput';
+export * from './attachmentInputCategory';
+export * from './attachmentInputEntityType';
 export * from './customer';
 export * from './customerCustomerType';
 export * from './customerInput';
@@ -28,6 +34,7 @@ export * from './equipmentStatus';
 export * from './equipmentUpdate';
 export * from './equipmentUpdateEquipmentType';
 export * from './equipmentUpdateStatus';
+export * from './errorEnvelope';
 export * from './healthStatus';
 export * from './housingUnit';
 export * from './housingUnitInput';
@@ -35,6 +42,8 @@ export * from './housingUnitInputUnitStatus';
 export * from './housingUnitUnitStatus';
 export * from './housingUnitUpdate';
 export * from './housingUnitUpdateUnitStatus';
+export * from './listAttachmentsEntityType';
+export * from './listAttachmentsParams';
 export * from './projectSummary';
 export * from './pvAsset';
 export * from './pvAssetCurrentStatus';
@@ -58,6 +67,8 @@ export * from './siteUpdate';
 export * from './siteUpdateSiteType';
 export * from './siteUpdateStatus';
 export * from './statusCount';
+export * from './uploadUrlRequest';
+export * from './uploadUrlResponse';
 export * from './workOrder';
 export * from './workOrderInput';
 export * from './workOrderInputPriority';

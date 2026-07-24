@@ -883,3 +883,90 @@ export interface HousingUnitUpdate {
   unitStatus?: HousingUnitUpdateUnitStatus;
 }
 
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
+export interface ErrorEnvelope {
+  error: string;
+}
+
+export type AttachmentEntityType = typeof AttachmentEntityType[keyof typeof AttachmentEntityType];
+
+
+export const AttachmentEntityType = {
+  site: 'site',
+  asset: 'asset',
+} as const;
+
+export type AttachmentCategory = typeof AttachmentCategory[keyof typeof AttachmentCategory];
+
+
+export const AttachmentCategory = {
+  photo: 'photo',
+  drawing: 'drawing',
+} as const;
+
+export interface Attachment {
+  id: number;
+  entityType: AttachmentEntityType;
+  entityId: number;
+  category: AttachmentCategory;
+  fileName: string;
+  objectPath: string;
+  /** @nullable */
+  mimeType?: string | null;
+  createdAt: string;
+}
+
+export type AttachmentInputEntityType = typeof AttachmentInputEntityType[keyof typeof AttachmentInputEntityType];
+
+
+export const AttachmentInputEntityType = {
+  site: 'site',
+  asset: 'asset',
+} as const;
+
+export type AttachmentInputCategory = typeof AttachmentInputCategory[keyof typeof AttachmentInputCategory];
+
+
+export const AttachmentInputCategory = {
+  photo: 'photo',
+  drawing: 'drawing',
+} as const;
+
+export interface AttachmentInput {
+  entityType: AttachmentInputEntityType;
+  entityId: number;
+  category: AttachmentInputCategory;
+  /** @minLength 1 */
+  fileName: string;
+  /** @minLength 1 */
+  objectPath: string;
+  mimeType?: string;
+}
+
+export type ListAttachmentsParams = {
+entityType: ListAttachmentsEntityType;
+entityId: number;
+};
+
+export type ListAttachmentsEntityType = typeof ListAttachmentsEntityType[keyof typeof ListAttachmentsEntityType];
+
+
+export const ListAttachmentsEntityType = {
+  site: 'site',
+  asset: 'asset',
+} as const;
+

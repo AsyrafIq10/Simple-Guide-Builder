@@ -5,7 +5,7 @@ import {
   getListSitesQueryKey, ListSitesQueryResult, ListCustomersQueryResult,
 } from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MapPin, Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Plus, Search, Pencil, Trash2, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
 
@@ -17,6 +17,8 @@ const BLANK_FORM = {
   siteType: "commercial" as const,
   status: "active" as const,
   customerId: "",
+  latitude: "",
+  longitude: "",
 };
 
 export default function Sites() {
@@ -163,6 +165,8 @@ function SiteSheet(
         siteType: props.site.siteType as typeof BLANK_FORM["siteType"],
         status: props.site.status as typeof BLANK_FORM["status"],
         customerId: props.site.customerId ? String(props.site.customerId) : "",
+        latitude: props.site.latitude != null ? String(props.site.latitude) : "",
+        longitude: props.site.longitude != null ? String(props.site.longitude) : "",
       }
     : BLANK_FORM;
 
@@ -177,6 +181,8 @@ function SiteSheet(
         siteType: props.site.siteType as typeof BLANK_FORM["siteType"],
         status: props.site.status as typeof BLANK_FORM["status"],
         customerId: props.site.customerId ? String(props.site.customerId) : "",
+        latitude: props.site.latitude != null ? String(props.site.latitude) : "",
+        longitude: props.site.longitude != null ? String(props.site.longitude) : "",
       });
     } else {
       setFormData(BLANK_FORM);
@@ -186,7 +192,12 @@ function SiteSheet(
 
   const mutation = useMutation({
     mutationFn: (data: typeof formData) => {
-      const payload = { ...data, customerId: data.customerId ? Number(data.customerId) : undefined };
+      const payload = {
+        ...data,
+        customerId: data.customerId ? Number(data.customerId) : undefined,
+        latitude: data.latitude ? Number(data.latitude) : undefined,
+        longitude: data.longitude ? Number(data.longitude) : undefined,
+      };
       return props.mode === "create"
         ? createSite(payload)
         : updateSite((props as any).site.id, payload);
@@ -257,6 +268,20 @@ function SiteSheet(
             <option value="inactive">Inactive</option>
             <option value="decommissioned">Decommissioned</option>
           </select>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-1"><Navigation className="size-3" /> Latitude</label>
+            <input type="number" step="0.000001" placeholder="3.140853"
+              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none font-mono"
+              value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Longitude</label>
+            <input type="number" step="0.000001" placeholder="101.686855"
+              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none font-mono"
+              value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: e.target.value })} />
+          </div>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Address</label>

@@ -1076,3 +1076,102 @@ export const DeleteHousingUnitParams = zod.object({
 export const DeleteHousingUnitResponse = zod.void()
 
 
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+
+
+
+
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+})
+
+
+
+
+
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+}).optional()
+})
+
+
+/**
+ * @summary Serve a private object entity
+ */
+export const GetStorageObjectParams = zod.object({
+  "objectPath": zod.coerce.string()
+})
+
+export const GetStorageObjectResponse = zod.unknown()
+
+
+/**
+ * @summary List attachments for a site or asset
+ */
+export const ListAttachmentsQueryParams = zod.object({
+  "entityType": zod.enum(['site', 'asset']),
+  "entityId": zod.coerce.number()
+})
+
+export const ListAttachmentsResponseItem = zod.object({
+  "id": zod.number(),
+  "entityType": zod.enum(['site', 'asset']),
+  "entityId": zod.number(),
+  "category": zod.enum(['photo', 'drawing']),
+  "fileName": zod.string(),
+  "objectPath": zod.string(),
+  "mimeType": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAttachmentsResponse = zod.array(ListAttachmentsResponseItem)
+
+
+/**
+ * @summary Save attachment metadata after upload
+ */
+
+
+
+
+export const CreateAttachmentBody = zod.object({
+  "entityType": zod.enum(['site', 'asset']),
+  "entityId": zod.number(),
+  "category": zod.enum(['photo', 'drawing']),
+  "fileName": zod.string().min(1),
+  "objectPath": zod.string().min(1),
+  "mimeType": zod.string().optional()
+})
+
+export const CreateAttachmentResponse = zod.object({
+  "id": zod.number(),
+  "entityType": zod.enum(['site', 'asset']),
+  "entityId": zod.number(),
+  "category": zod.enum(['photo', 'drawing']),
+  "fileName": zod.string(),
+  "objectPath": zod.string(),
+  "mimeType": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete an attachment record
+ */
+export const DeleteAttachmentParams = zod.object({
+  "attachmentId": zod.coerce.number()
+})
+
+export const DeleteAttachmentResponse = zod.void()
+
+
