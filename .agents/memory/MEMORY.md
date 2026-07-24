@@ -1,0 +1,1 @@
+- [FusionSolar Module 2](fusionsolar-module2.md) — live monitoring tab built; awaiting credentials to activate API calls
