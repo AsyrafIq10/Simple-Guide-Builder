@@ -23,4 +23,5 @@ export interface PvAssetInput {
   designLifeYears?: number;
   currentStatus: PvAssetInputCurrentStatus;
   monitoringStatus?: PvAssetInputMonitoringStatus;
+  fusionSolarStationCode?: string;
 }

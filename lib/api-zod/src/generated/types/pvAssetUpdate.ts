@@ -21,4 +21,5 @@ export interface PvAssetUpdate {
   designLifeYears?: number;
   currentStatus?: PvAssetUpdateCurrentStatus;
   monitoringStatus?: PvAssetUpdateMonitoringStatus;
+  fusionSolarStationCode?: string;
 }

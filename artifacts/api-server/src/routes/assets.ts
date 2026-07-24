@@ -19,6 +19,7 @@ const toDto = (r: typeof pvAssetsTable.$inferSelect) => ({
   ...r,
   installedCapacityKwp: r.installedCapacityKwp ? Number(r.installedCapacityKwp) : null,
   acCapacityKw: r.acCapacityKw ? Number(r.acCapacityKw) : null,
+  fusionSolarStationCode: r.fusionSolarStationCode ?? null,
   createdAt: r.createdAt.toISOString(),
   updatedAt: r.updatedAt ? r.updatedAt.toISOString() : null,
 });

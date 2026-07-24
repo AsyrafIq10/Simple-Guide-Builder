@@ -30,4 +30,6 @@ export interface PvAsset {
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
+  /** @nullable */
+  fusionSolarStationCode?: string | null;
 }

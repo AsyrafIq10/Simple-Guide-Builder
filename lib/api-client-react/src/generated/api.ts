@@ -33,11 +33,18 @@ import type {
   EquipmentInput,
   EquipmentUpdate,
   ErrorEnvelope,
+  GetMonitoringAnnualParams,
+  GetMonitoringDailyParams,
+  GetMonitoringMonthlyParams,
   HealthStatus,
   HousingUnit,
   HousingUnitInput,
   HousingUnitUpdate,
   ListAttachmentsParams,
+  MonitoringAnnual,
+  MonitoringDaily,
+  MonitoringMonthly,
+  MonitoringRealtime,
   ProjectSummary,
   PvAsset,
   PvAssetInput,
@@ -1568,6 +1575,350 @@ export const useDeleteAsset = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteAssetMutationOptions(options));
     }
+
+export const getGetMonitoringRealtimeUrl = (assetId: number,) => {
+
+
+
+
+  return `/api/monitoring/${assetId}/realtime`
+}
+
+/**
+ * @summary Live inverter KPIs from FusionSolar
+ */
+export const getMonitoringRealtime = async (assetId: number, options?: RequestInit): Promise<MonitoringRealtime> => {
+
+  return customFetch<MonitoringRealtime>(getGetMonitoringRealtimeUrl(assetId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMonitoringRealtimeQueryKey = (assetId: number,) => {
+    return [
+    `/api/monitoring/${assetId}/realtime`
+    ] as const;
+    }
+
+
+export const getGetMonitoringRealtimeQueryOptions = <TData = Awaited<ReturnType<typeof getMonitoringRealtime>>, TError = ErrorType<void>>(assetId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringRealtime>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMonitoringRealtimeQueryKey(assetId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonitoringRealtime>>> = ({ signal }) => getMonitoringRealtime(assetId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: assetId !== null && assetId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMonitoringRealtime>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMonitoringRealtimeQueryResult = NonNullable<Awaited<ReturnType<typeof getMonitoringRealtime>>>
+export type GetMonitoringRealtimeQueryError = ErrorType<void>
+
+
+/**
+ * @summary Live inverter KPIs from FusionSolar
+ */
+
+export function useGetMonitoringRealtime<TData = Awaited<ReturnType<typeof getMonitoringRealtime>>, TError = ErrorType<void>>(
+ assetId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringRealtime>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMonitoringRealtimeQueryOptions(assetId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMonitoringDailyUrl = (assetId: number,
+    params?: GetMonitoringDailyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/monitoring/${assetId}/daily?${stringifiedParams}` : `/api/monitoring/${assetId}/daily`
+}
+
+/**
+ * @summary Hourly power curve for a given date
+ */
+export const getMonitoringDaily = async (assetId: number,
+    params?: GetMonitoringDailyParams, options?: RequestInit): Promise<MonitoringDaily> => {
+
+  return customFetch<MonitoringDaily>(getGetMonitoringDailyUrl(assetId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMonitoringDailyQueryKey = (assetId: number,
+    params?: GetMonitoringDailyParams,) => {
+    return [
+    `/api/monitoring/${assetId}/daily`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMonitoringDailyQueryOptions = <TData = Awaited<ReturnType<typeof getMonitoringDaily>>, TError = ErrorType<void>>(assetId: number,
+    params?: GetMonitoringDailyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringDaily>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMonitoringDailyQueryKey(assetId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonitoringDaily>>> = ({ signal }) => getMonitoringDaily(assetId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: assetId !== null && assetId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMonitoringDaily>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMonitoringDailyQueryResult = NonNullable<Awaited<ReturnType<typeof getMonitoringDaily>>>
+export type GetMonitoringDailyQueryError = ErrorType<void>
+
+
+/**
+ * @summary Hourly power curve for a given date
+ */
+
+export function useGetMonitoringDaily<TData = Awaited<ReturnType<typeof getMonitoringDaily>>, TError = ErrorType<void>>(
+ assetId: number,
+    params?: GetMonitoringDailyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringDaily>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMonitoringDailyQueryOptions(assetId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMonitoringMonthlyUrl = (assetId: number,
+    params?: GetMonitoringMonthlyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/monitoring/${assetId}/monthly?${stringifiedParams}` : `/api/monitoring/${assetId}/monthly`
+}
+
+/**
+ * @summary Daily yield breakdown for a given month
+ */
+export const getMonitoringMonthly = async (assetId: number,
+    params?: GetMonitoringMonthlyParams, options?: RequestInit): Promise<MonitoringMonthly> => {
+
+  return customFetch<MonitoringMonthly>(getGetMonitoringMonthlyUrl(assetId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMonitoringMonthlyQueryKey = (assetId: number,
+    params?: GetMonitoringMonthlyParams,) => {
+    return [
+    `/api/monitoring/${assetId}/monthly`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMonitoringMonthlyQueryOptions = <TData = Awaited<ReturnType<typeof getMonitoringMonthly>>, TError = ErrorType<void>>(assetId: number,
+    params?: GetMonitoringMonthlyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringMonthly>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMonitoringMonthlyQueryKey(assetId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonitoringMonthly>>> = ({ signal }) => getMonitoringMonthly(assetId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: assetId !== null && assetId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMonitoringMonthly>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMonitoringMonthlyQueryResult = NonNullable<Awaited<ReturnType<typeof getMonitoringMonthly>>>
+export type GetMonitoringMonthlyQueryError = ErrorType<void>
+
+
+/**
+ * @summary Daily yield breakdown for a given month
+ */
+
+export function useGetMonitoringMonthly<TData = Awaited<ReturnType<typeof getMonitoringMonthly>>, TError = ErrorType<void>>(
+ assetId: number,
+    params?: GetMonitoringMonthlyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringMonthly>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMonitoringMonthlyQueryOptions(assetId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMonitoringAnnualUrl = (assetId: number,
+    params?: GetMonitoringAnnualParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/monitoring/${assetId}/annual?${stringifiedParams}` : `/api/monitoring/${assetId}/annual`
+}
+
+/**
+ * @summary Monthly yield breakdown for a given year
+ */
+export const getMonitoringAnnual = async (assetId: number,
+    params?: GetMonitoringAnnualParams, options?: RequestInit): Promise<MonitoringAnnual> => {
+
+  return customFetch<MonitoringAnnual>(getGetMonitoringAnnualUrl(assetId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMonitoringAnnualQueryKey = (assetId: number,
+    params?: GetMonitoringAnnualParams,) => {
+    return [
+    `/api/monitoring/${assetId}/annual`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMonitoringAnnualQueryOptions = <TData = Awaited<ReturnType<typeof getMonitoringAnnual>>, TError = ErrorType<void>>(assetId: number,
+    params?: GetMonitoringAnnualParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringAnnual>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMonitoringAnnualQueryKey(assetId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonitoringAnnual>>> = ({ signal }) => getMonitoringAnnual(assetId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: assetId !== null && assetId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMonitoringAnnual>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMonitoringAnnualQueryResult = NonNullable<Awaited<ReturnType<typeof getMonitoringAnnual>>>
+export type GetMonitoringAnnualQueryError = ErrorType<void>
+
+
+/**
+ * @summary Monthly yield breakdown for a given year
+ */
+
+export function useGetMonitoringAnnual<TData = Awaited<ReturnType<typeof getMonitoringAnnual>>, TError = ErrorType<void>>(
+ assetId: number,
+    params?: GetMonitoringAnnualParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonitoringAnnual>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMonitoringAnnualQueryOptions(assetId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListEquipmentUrl = (assetId: number,) => {
 

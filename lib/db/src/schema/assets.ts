@@ -15,6 +15,7 @@ export const pvAssetsTable = pgTable("pv_assets", {
   designLifeYears: integer("design_life_years"),
   currentStatus: text("current_status").notNull().default("operational"),
   monitoringStatus: text("monitoring_status").notNull().default("not_configured"),
+  fusionSolarStationCode: text("fusion_solar_station_code"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
