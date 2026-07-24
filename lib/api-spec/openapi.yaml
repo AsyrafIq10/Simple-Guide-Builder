@@ -370,6 +370,116 @@ paths:
         "204":
           description: Deleted
 
+  # ─── Monitoring (FusionSolar) ────────────────────────────────
+  /monitoring/{assetId}/realtime:
+    get:
+      operationId: getMonitoringRealtime
+      tags: [monitoring]
+      summary: Live inverter KPIs from FusionSolar
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Realtime KPIs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitoringRealtime"
+        "404":
+          description: Asset not found or station not configured
+        "502":
+          description: FusionSolar upstream error
+
+  /monitoring/{assetId}/daily:
+    get:
+      operationId: getMonitoringDaily
+      tags: [monitoring]
+      summary: Hourly power curve for a given date
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          schema:
+            type: string
+          description: "Date in YYYY-MM-DD format (defaults to today)"
+      responses:
+        "200":
+          description: Daily production data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitoringDaily"
+        "404":
+          description: Not found
+        "502":
+          description: FusionSolar upstream error
+
+  /monitoring/{assetId}/monthly:
+    get:
+      operationId: getMonitoringMonthly
+      tags: [monitoring]
+      summary: Daily yield breakdown for a given month
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Monthly production data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitoringMonthly"
+        "404":
+          description: Not found
+        "502":
+          description: FusionSolar upstream error
+
+  /monitoring/{assetId}/annual:
+    get:
+      operationId: getMonitoringAnnual
+      tags: [monitoring]
+      summary: Monthly yield breakdown for a given year
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Annual production data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitoringAnnual"
+        "404":
+          description: Not found
+        "502":
+          description: FusionSolar upstream error
+
   # ─── Equipment ───────────────────────────────────────────────
   /assets/{assetId}/equipment:
     get:
@@ -1131,6 +1241,8 @@ components:
           type: string
         updatedAt:
           type: ["string", "null"]
+        fusionSolarStationCode:
+          type: ["string", "null"]
 
     PvAssetInput:
       type: object
@@ -1163,6 +1275,8 @@ components:
         monitoringStatus:
           type: string
           enum: [active, inactive, not_configured]
+        fusionSolarStationCode:
+          type: string
 
     PvAssetUpdate:
       type: object
@@ -1192,6 +1306,8 @@ components:
         monitoringStatus:
           type: string
           enum: [active, inactive, not_configured]
+        fusionSolarStationCode:
+          type: string
 
     # ─── Equipment ────────────────────────────────────────
     Equipment:
@@ -1684,3 +1800,106 @@ components:
           minLength: 1
         mimeType:
           type: string
+
+    # ─── Monitoring ───────────────────────────────────────
+    MonitoringRealtime:
+      type: object
+      required: [stationCode, powerKw, todayYieldKwh, totalYieldMwh, performanceRatio, status, updatedAt]
+      properties:
+        stationCode:
+          type: string
+        powerKw:
+          type: number
+        todayYieldKwh:
+          type: number
+        totalYieldMwh:
+          type: number
+        performanceRatio:
+          type: number
+        status:
+          type: string
+          enum: [generating, offline, fault, standby, unknown]
+        inverterState:
+          type: ["integer", "null"]
+        temperatureC:
+          type: ["number", "null"]
+        updatedAt:
+          type: string
+
+    MonitoringDailyPoint:
+      type: object
+      required: [collectTime, timeLabel, powerKw, yieldKwh, irradiationKwhm2]
+      properties:
+        collectTime:
+          type: integer
+        timeLabel:
+          type: string
+        powerKw:
+          type: number
+        yieldKwh:
+          type: number
+        irradiationKwhm2:
+          type: number
+
+    MonitoringDaily:
+      type: object
+      required: [date, points, totalYieldKwh, peakPowerKw]
+      properties:
+        date:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonitoringDailyPoint"
+        totalYieldKwh:
+          type: number
+        peakPowerKw:
+          type: number
+
+    MonitoringMonthlyDay:
+      type: object
+      required: [date, yieldKwh, irradiationKwhm2]
+      properties:
+        date:
+          type: string
+        yieldKwh:
+          type: number
+        irradiationKwhm2:
+          type: number
+
+    MonitoringMonthly:
+      type: object
+      required: [year, month, days, totalYieldKwh]
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonitoringMonthlyDay"
+        totalYieldKwh:
+          type: number
+
+    MonitoringAnnualMonth:
+      type: object
+      required: [month, yieldKwh]
+      properties:
+        month:
+          type: integer
+        yieldKwh:
+          type: number
+
+    MonitoringAnnual:
+      type: object
+      required: [year, months, totalYieldKwh]
+      properties:
+        year:
+          type: integer
+        months:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonitoringAnnualMonth"
+        totalYieldKwh:
+          type: number

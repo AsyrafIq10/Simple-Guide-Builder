@@ -351,7 +351,8 @@ export const ListAssetsResponseItem = zod.object({
   "currentStatus": zod.enum(['operational', 'fault', 'offline', 'under_maintenance', 'decommissioned']),
   "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().nullish()
+  "updatedAt": zod.string().nullish(),
+  "fusionSolarStationCode": zod.string().nullish()
 })
 export const ListAssetsResponse = zod.array(ListAssetsResponseItem)
 
@@ -374,7 +375,8 @@ export const CreateAssetBody = zod.object({
   "commissioningDate": zod.string().optional(),
   "designLifeYears": zod.number().optional(),
   "currentStatus": zod.enum(['operational', 'fault', 'offline', 'under_maintenance', 'decommissioned']),
-  "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional()
+  "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional(),
+  "fusionSolarStationCode": zod.string().optional()
 })
 
 export const CreateAssetResponse = zod.object({
@@ -391,7 +393,8 @@ export const CreateAssetResponse = zod.object({
   "currentStatus": zod.enum(['operational', 'fault', 'offline', 'under_maintenance', 'decommissioned']),
   "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().nullish()
+  "updatedAt": zod.string().nullish(),
+  "fusionSolarStationCode": zod.string().nullish()
 })
 
 
@@ -416,7 +419,8 @@ export const GetAssetResponse = zod.object({
   "currentStatus": zod.enum(['operational', 'fault', 'offline', 'under_maintenance', 'decommissioned']),
   "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().nullish()
+  "updatedAt": zod.string().nullish(),
+  "fusionSolarStationCode": zod.string().nullish()
 })
 
 
@@ -438,7 +442,8 @@ export const UpdateAssetBody = zod.object({
   "commissioningDate": zod.string().optional(),
   "designLifeYears": zod.number().optional(),
   "currentStatus": zod.enum(['operational', 'fault', 'offline', 'under_maintenance', 'decommissioned']).optional(),
-  "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional()
+  "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional(),
+  "fusionSolarStationCode": zod.string().optional()
 })
 
 export const UpdateAssetResponse = zod.object({
@@ -455,7 +460,8 @@ export const UpdateAssetResponse = zod.object({
   "currentStatus": zod.enum(['operational', 'fault', 'offline', 'under_maintenance', 'decommissioned']),
   "monitoringStatus": zod.enum(['active', 'inactive', 'not_configured']).optional(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().nullish()
+  "updatedAt": zod.string().nullish(),
+  "fusionSolarStationCode": zod.string().nullish()
 })
 
 
@@ -467,6 +473,96 @@ export const DeleteAssetParams = zod.object({
 })
 
 export const DeleteAssetResponse = zod.void()
+
+
+/**
+ * @summary Live inverter KPIs from FusionSolar
+ */
+export const GetMonitoringRealtimeParams = zod.object({
+  "assetId": zod.coerce.number()
+})
+
+export const GetMonitoringRealtimeResponse = zod.object({
+  "stationCode": zod.string(),
+  "powerKw": zod.number(),
+  "todayYieldKwh": zod.number(),
+  "totalYieldMwh": zod.number(),
+  "performanceRatio": zod.number(),
+  "status": zod.enum(['generating', 'offline', 'fault', 'standby', 'unknown']),
+  "inverterState": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Hourly power curve for a given date
+ */
+export const GetMonitoringDailyParams = zod.object({
+  "assetId": zod.coerce.number()
+})
+
+export const GetMonitoringDailyQueryParams = zod.object({
+  "date": zod.coerce.string().optional().describe('Date in YYYY-MM-DD format (defaults to today)')
+})
+
+export const GetMonitoringDailyResponse = zod.object({
+  "date": zod.string(),
+  "points": zod.array(zod.object({
+  "collectTime": zod.number(),
+  "timeLabel": zod.string(),
+  "powerKw": zod.number(),
+  "yieldKwh": zod.number(),
+  "irradiationKwhm2": zod.number()
+})),
+  "totalYieldKwh": zod.number(),
+  "peakPowerKw": zod.number()
+})
+
+
+/**
+ * @summary Daily yield breakdown for a given month
+ */
+export const GetMonitoringMonthlyParams = zod.object({
+  "assetId": zod.coerce.number()
+})
+
+export const GetMonitoringMonthlyQueryParams = zod.object({
+  "year": zod.coerce.number().optional(),
+  "month": zod.coerce.number().optional()
+})
+
+export const GetMonitoringMonthlyResponse = zod.object({
+  "year": zod.number(),
+  "month": zod.number(),
+  "days": zod.array(zod.object({
+  "date": zod.string(),
+  "yieldKwh": zod.number(),
+  "irradiationKwhm2": zod.number()
+})),
+  "totalYieldKwh": zod.number()
+})
+
+
+/**
+ * @summary Monthly yield breakdown for a given year
+ */
+export const GetMonitoringAnnualParams = zod.object({
+  "assetId": zod.coerce.number()
+})
+
+export const GetMonitoringAnnualQueryParams = zod.object({
+  "year": zod.coerce.number().optional()
+})
+
+export const GetMonitoringAnnualResponse = zod.object({
+  "year": zod.number(),
+  "months": zod.array(zod.object({
+  "month": zod.number(),
+  "yieldKwh": zod.number()
+})),
+  "totalYieldKwh": zod.number()
+})
 
 
 /**

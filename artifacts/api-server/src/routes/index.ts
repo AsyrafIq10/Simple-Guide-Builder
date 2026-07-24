@@ -10,6 +10,7 @@ import developerProjectsRouter from "./developer_projects";
 import housingUnitsRouter from "./housing_units";
 import storageRouter from "./storage";
 import attachmentsRouter from "./attachments";
+import monitoringRouter from "./monitoring";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(developerProjectsRouter);
 router.use(housingUnitsRouter);
 router.use(storageRouter);
 router.use(attachmentsRouter);
+router.use(monitoringRouter);
 
 export default router;

@@ -6,10 +6,14 @@ import {
   getGetAssetQueryKey, getGetSiteQueryKey, getListEquipmentQueryKey,
 } from "@workspace/api-client-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Zap, MapPin, Edit, ArrowLeft, Plus, Settings2, ShieldCheck, Cpu, Camera, FileText, Upload, Trash2, QrCode, Download } from "lucide-react";
+import { Zap, MapPin, Edit, ArrowLeft, Plus, Settings2, ShieldCheck, Cpu, Camera, FileText, Upload, Trash2, QrCode, Download, Activity, Sun, TrendingUp, BarChart3, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
 import QRCode from "react-qr-code";
+import {
+  AreaChart, Area, BarChart, Bar,
+  CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from "recharts";
 
 const BASE = "/api";
 
@@ -169,6 +173,247 @@ function AssetQrCard({ asset }: { asset: any }) {
   );
 }
 
+// ─── Monitoring components ────────────────────────────────────────────────────
+
+function KpiCard({ title, value, icon: Icon, color }: {
+  title: string; value: string | null; icon: React.ElementType;
+  color: "blue" | "amber" | "green" | "purple";
+}) {
+  const cls = {
+    blue:   "bg-blue-50 text-blue-600 border-blue-100",
+    amber:  "bg-amber-50 text-amber-600 border-amber-100",
+    green:  "bg-emerald-50 text-emerald-600 border-emerald-100",
+    purple: "bg-violet-50 text-violet-600 border-violet-100",
+  }[color];
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 flex items-start gap-3">
+      <div className={`size-9 rounded-lg flex items-center justify-center border shrink-0 ${cls}`}>
+        <Icon className="size-4" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">{title}</div>
+        <div className="font-bold text-lg leading-tight">
+          {value ?? <span className="text-muted-foreground/40 text-sm animate-pulse">—</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  generating: "text-emerald-600 bg-emerald-50 border-emerald-200",
+  standby:    "text-amber-600  bg-amber-50  border-amber-200",
+  fault:      "text-red-600   bg-red-50   border-red-200",
+  offline:    "text-gray-500  bg-gray-100 border-gray-200",
+  unknown:    "text-gray-400  bg-gray-50  border-gray-100",
+};
+
+function MonitoringTab({ assetId, fusionSolarStationCode }: {
+  assetId: number; fusionSolarStationCode?: string | null;
+}) {
+  const now = new Date();
+  const [selDate,  setSelDate]  = useState(now.toISOString().slice(0, 10));
+  const [selYear,  setSelYear]  = useState(now.getFullYear());
+  const [selMonth, setSelMonth] = useState(now.getMonth() + 1);
+  const [annYear,  setAnnYear]  = useState(now.getFullYear());
+
+  const base = `/api/monitoring/${assetId}`;
+
+  const rtQ = useQuery({
+    queryKey: ["monitoring", assetId, "realtime"],
+    queryFn: async () => { const r = await fetch(`${base}/realtime`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    enabled: !!fusionSolarStationCode,
+    refetchInterval: 60_000,
+    retry: 1,
+  });
+  const dayQ = useQuery({
+    queryKey: ["monitoring", assetId, "daily", selDate],
+    queryFn: async () => { const r = await fetch(`${base}/daily?date=${selDate}`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    enabled: !!fusionSolarStationCode,
+  });
+  const monQ = useQuery({
+    queryKey: ["monitoring", assetId, "monthly", selYear, selMonth],
+    queryFn: async () => { const r = await fetch(`${base}/monthly?year=${selYear}&month=${selMonth}`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    enabled: !!fusionSolarStationCode,
+  });
+  const annQ = useQuery({
+    queryKey: ["monitoring", assetId, "annual", annYear],
+    queryFn: async () => { const r = await fetch(`${base}/annual?year=${annYear}`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    enabled: !!fusionSolarStationCode,
+  });
+
+  if (!fusionSolarStationCode) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="size-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-5 border border-blue-100">
+          <Activity className="size-8 text-blue-400" />
+        </div>
+        <h3 className="font-semibold text-gray-900 mb-2">FusionSolar Not Linked</h3>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Link this asset to a FusionSolar plant to see live power, performance ratio, and historical production.
+        </p>
+        <p className="text-xs text-muted-foreground/60 mt-4 bg-muted/40 px-3 py-1.5 rounded-lg">
+          Click <strong>Edit Asset</strong> → enter the <strong>FusionSolar Station Code</strong>
+        </p>
+      </div>
+    );
+  }
+
+  const rt = rtQ.data;
+  const statusStyle = STATUS_STYLE[rt?.status ?? "unknown"];
+
+  return (
+    <div className="space-y-5">
+      {/* Status bar + live KPI cards */}
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          {rtQ.isLoading ? (
+            <span className="text-xs text-muted-foreground animate-pulse">Connecting to FusionSolar…</span>
+          ) : rtQ.isError ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+              <AlertCircle className="size-3" /> {(rtQ.error as Error).message}
+            </span>
+          ) : (
+            <>
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${statusStyle}`}>
+                <span className="size-1.5 rounded-full bg-current animate-pulse" />
+                {rt?.status?.toUpperCase()}
+              </span>
+              <span className="text-xs text-muted-foreground">Live · refreshes every 60 s</span>
+              <button onClick={() => rtQ.refetch()} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
+                <RefreshCw className={`size-3.5 ${rtQ.isFetching ? "animate-spin" : ""}`} />
+              </button>
+            </>
+          )}
+        </div>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <KpiCard title="Power Now"       value={rt ? `${rt.powerKw.toFixed(2)} kW`                        : null} icon={Zap}        color="blue" />
+          <KpiCard title="Today's Yield"   value={rt ? `${rt.todayYieldKwh.toFixed(1)} kWh`                 : null} icon={Sun}        color="amber" />
+          <KpiCard title="Performance Ratio" value={rt ? `${(rt.performanceRatio * 100).toFixed(1)} %`       : null} icon={TrendingUp} color="green" />
+          <KpiCard title="Lifetime Yield"  value={rt ? `${rt.totalYieldMwh.toFixed(2)} MWh`                 : null} icon={BarChart3}  color="purple" />
+        </div>
+      </div>
+
+      {/* Daily power curve */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h3 className="font-semibold text-sm">Daily Power Curve</h3>
+          <input type="date" value={selDate} max={now.toISOString().slice(0, 10)}
+            onChange={e => setSelDate(e.target.value)}
+            className="text-xs border border-border rounded-lg px-2.5 py-1.5 outline-none focus:border-primary bg-background" />
+        </div>
+        {dayQ.isLoading ? (
+          <div className="h-44 flex items-center justify-center text-sm text-muted-foreground animate-pulse">Loading…</div>
+        ) : (dayQ.data?.points?.length ?? 0) > 0 ? (
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={dayQ.data.points} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="pwrGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="timeLabel" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} unit=" kW" width={46} />
+              <Tooltip formatter={(v: any) => [`${Number(v).toFixed(2)} kW`, "Power"]} />
+              <Area type="monotone" dataKey="powerKw" stroke="#3b82f6" strokeWidth={2} fill="url(#pwrGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-44 flex items-center justify-center text-sm text-muted-foreground">No data for this date</div>
+        )}
+        {dayQ.data && (
+          <div className="flex gap-6 mt-3 text-sm text-muted-foreground pt-3 border-t border-border">
+            <span>Total <strong className="text-foreground">{dayQ.data.totalYieldKwh?.toFixed(1)} kWh</strong></span>
+            <span>Peak <strong className="text-foreground">{dayQ.data.peakPowerKw?.toFixed(2)} kW</strong></span>
+          </div>
+        )}
+      </div>
+
+      {/* Monthly chart */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h3 className="font-semibold text-sm">Monthly Production</h3>
+          <div className="flex gap-2">
+            <select value={selMonth} onChange={e => setSelMonth(Number(e.target.value))}
+              className="text-xs border border-border rounded-lg px-2.5 py-1.5 outline-none bg-background">
+              {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                <option key={i} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            <input type="number" value={selYear} min={2018} max={2035}
+              onChange={e => setSelYear(Number(e.target.value))}
+              className="w-20 text-xs border border-border rounded-lg px-2.5 py-1.5 outline-none bg-background" />
+          </div>
+        </div>
+        {monQ.isLoading ? (
+          <div className="h-44 flex items-center justify-center text-sm text-muted-foreground animate-pulse">Loading…</div>
+        ) : (monQ.data?.days?.length ?? 0) > 0 ? (
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={monQ.data.days} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
+                tickFormatter={d => d.slice(8)} />
+              <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} unit=" kWh" width={50} />
+              <Tooltip formatter={(v: any) => [`${Number(v).toFixed(1)} kWh`, "Yield"]}
+                labelFormatter={l => `Day ${String(l).slice(8)}`} />
+              <Bar dataKey="yieldKwh" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-44 flex items-center justify-center text-sm text-muted-foreground">No data</div>
+        )}
+        {monQ.data && (
+          <p className="text-sm text-muted-foreground mt-3 pt-3 border-t border-border">
+            Total <strong className="text-foreground">{monQ.data.totalYieldKwh?.toFixed(1)} kWh</strong>
+          </p>
+        )}
+      </div>
+
+      {/* Annual chart */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h3 className="font-semibold text-sm">Annual Production</h3>
+          <input type="number" value={annYear} min={2018} max={2035}
+            onChange={e => setAnnYear(Number(e.target.value))}
+            className="w-20 text-xs border border-border rounded-lg px-2.5 py-1.5 outline-none bg-background" />
+        </div>
+        {annQ.isLoading ? (
+          <div className="h-44 flex items-center justify-center text-sm text-muted-foreground animate-pulse">Loading…</div>
+        ) : (annQ.data?.months?.length ?? 0) > 0 ? (
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={annQ.data.months} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
+                tickFormatter={m => ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m as number]} />
+              <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} unit=" kWh" width={55} />
+              <Tooltip formatter={(v: any) => [`${Number(v).toFixed(0)} kWh`, "Yield"]}
+                labelFormatter={m => ["","January","February","March","April","May","June","July","August","September","October","November","December"][m as number]} />
+              <Bar dataKey="yieldKwh" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-44 flex items-center justify-center text-sm text-muted-foreground">No data</div>
+        )}
+        {annQ.data && (
+          <p className="text-sm text-muted-foreground mt-3 pt-3 border-t border-border">
+            Total <strong className="text-foreground">{annQ.data.totalYieldKwh?.toFixed(0)} kWh</strong> ({annYear})
+          </p>
+        )}
+      </div>
+
+      {rt?.temperatureC != null && (
+        <p className="text-xs text-muted-foreground/70 text-right">
+          Inverter temp: {rt.temperatureC.toFixed(1)} °C
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function AssetDetail() {
   const { id } = useParams();
   const assetId = Number(id);
@@ -178,6 +423,7 @@ export default function AssetDetail() {
   const { data: photos, invalidate: invalidatePhotos } = useAttachments("asset", assetId);
   const { data: drawings, invalidate: invalidateDrawings } = useAttachments("asset", assetId);
   const [attTab, setAttTab] = useState<"photo" | "drawing">("photo");
+  const [mainTab, setMainTab] = useState<"overview" | "monitoring">("overview");
 
   const [isEditAssetOpen, setEditAssetOpen] = useState(false);
   const [isEqSheetOpen, setEqSheetOpen] = useState(false);
@@ -244,6 +490,22 @@ export default function AssetDetail() {
         </div>
       </div>
 
+      {/* Main tab nav */}
+      <div className="flex gap-1 border-b border-border">
+        {(["overview", "monitoring"] as const).map(tab => (
+          <button key={tab} onClick={() => setMainTab(tab)}
+            className={`px-4 py-2 text-sm font-medium capitalize transition-colors rounded-t-lg
+              ${mainTab === tab
+                ? "bg-card text-foreground border border-b-0 border-border -mb-px"
+                : "text-muted-foreground hover:text-foreground"}`}>
+            {tab === "monitoring" ? "⚡ Live Monitoring" : "📋 Overview"}
+          </button>
+        ))}
+      </div>
+
+      {mainTab === "monitoring" ? (
+        <MonitoringTab assetId={assetId} fusionSolarStationCode={(asset as any).fusionSolarStationCode} />
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1 space-y-6">
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -380,6 +642,7 @@ export default function AssetDetail() {
           </div>
         </div>
       </div>
+      )}
 
       <EditAssetSheet asset={asset} open={isEditAssetOpen} onClose={() => setEditAssetOpen(false)} />
       <CreateEqSheet assetId={assetId} open={isEqSheetOpen} onClose={() => setEqSheetOpen(false)} />
@@ -402,6 +665,7 @@ function EditAssetSheet({ asset, open, onClose }: { asset: any; open: boolean; o
     installedCapacityKwp: asset.installedCapacityKwp || "",
     acCapacityKw: asset.acCapacityKw || "",
     currentStatus: asset.currentStatus,
+    fusionSolarStationCode: (asset as any).fusionSolarStationCode || "",
   });
 
   const onSubmit = (e: React.FormEvent) => {
@@ -410,6 +674,7 @@ function EditAssetSheet({ asset, open, onClose }: { asset: any; open: boolean; o
       ...formData,
       installedCapacityKwp: formData.installedCapacityKwp ? Number(formData.installedCapacityKwp) : undefined,
       acCapacityKw: formData.acCapacityKw ? Number(formData.acCapacityKw) : undefined,
+      fusionSolarStationCode: formData.fusionSolarStationCode || undefined,
     });
   };
 
@@ -445,6 +710,24 @@ function EditAssetSheet({ asset, open, onClose }: { asset: any; open: boolean; o
               value={formData.acCapacityKw} onChange={e => setFormData({ ...formData, acCapacityKw: e.target.value })} />
           </div>
         </div>
+
+        {/* FusionSolar integration */}
+        <div className="pt-2 border-t border-border space-y-2">
+          <label className="text-sm font-medium flex items-center gap-1.5">
+            <Activity className="size-3.5 text-amber-500" /> FusionSolar Station Code
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. NE=12345678"
+            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono outline-none focus:border-primary"
+            value={formData.fusionSolarStationCode}
+            onChange={e => setFormData({ ...formData, fusionSolarStationCode: e.target.value })}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Find in FusionSolar Portal → Plant List → tap the plant → copy the station code from the URL or plant details.
+          </p>
+        </div>
+
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={mutation.isPending}>Save Changes</Button>

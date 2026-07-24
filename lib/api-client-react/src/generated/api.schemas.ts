@@ -263,6 +263,8 @@ export interface PvAsset {
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
+  /** @nullable */
+  fusionSolarStationCode?: string | null;
 }
 
 export type PvAssetInputSystemType = typeof PvAssetInputSystemType[keyof typeof PvAssetInputSystemType];
@@ -310,6 +312,7 @@ export interface PvAssetInput {
   designLifeYears?: number;
   currentStatus: PvAssetInputCurrentStatus;
   monitoringStatus?: PvAssetInputMonitoringStatus;
+  fusionSolarStationCode?: string;
 }
 
 export type PvAssetUpdateSystemType = typeof PvAssetUpdateSystemType[keyof typeof PvAssetUpdateSystemType];
@@ -355,6 +358,7 @@ export interface PvAssetUpdate {
   designLifeYears?: number;
   currentStatus?: PvAssetUpdateCurrentStatus;
   monitoringStatus?: PvAssetUpdateMonitoringStatus;
+  fusionSolarStationCode?: string;
 }
 
 export type EquipmentEquipmentType = typeof EquipmentEquipmentType[keyof typeof EquipmentEquipmentType];
@@ -956,6 +960,86 @@ export interface AttachmentInput {
   objectPath: string;
   mimeType?: string;
 }
+
+export type MonitoringRealtimeStatus = typeof MonitoringRealtimeStatus[keyof typeof MonitoringRealtimeStatus];
+
+
+export const MonitoringRealtimeStatus = {
+  generating: 'generating',
+  offline: 'offline',
+  fault: 'fault',
+  standby: 'standby',
+  unknown: 'unknown',
+} as const;
+
+export interface MonitoringRealtime {
+  stationCode: string;
+  powerKw: number;
+  todayYieldKwh: number;
+  totalYieldMwh: number;
+  performanceRatio: number;
+  status: MonitoringRealtimeStatus;
+  /** @nullable */
+  inverterState?: number | null;
+  /** @nullable */
+  temperatureC?: number | null;
+  updatedAt: string;
+}
+
+export interface MonitoringDailyPoint {
+  collectTime: number;
+  timeLabel: string;
+  powerKw: number;
+  yieldKwh: number;
+  irradiationKwhm2: number;
+}
+
+export interface MonitoringDaily {
+  date: string;
+  points: MonitoringDailyPoint[];
+  totalYieldKwh: number;
+  peakPowerKw: number;
+}
+
+export interface MonitoringMonthlyDay {
+  date: string;
+  yieldKwh: number;
+  irradiationKwhm2: number;
+}
+
+export interface MonitoringMonthly {
+  year: number;
+  month: number;
+  days: MonitoringMonthlyDay[];
+  totalYieldKwh: number;
+}
+
+export interface MonitoringAnnualMonth {
+  month: number;
+  yieldKwh: number;
+}
+
+export interface MonitoringAnnual {
+  year: number;
+  months: MonitoringAnnualMonth[];
+  totalYieldKwh: number;
+}
+
+export type GetMonitoringDailyParams = {
+/**
+ * Date in YYYY-MM-DD format (defaults to today)
+ */
+date?: string;
+};
+
+export type GetMonitoringMonthlyParams = {
+year?: number;
+month?: number;
+};
+
+export type GetMonitoringAnnualParams = {
+year?: number;
+};
 
 export type ListAttachmentsParams = {
 entityType: ListAttachmentsEntityType;
