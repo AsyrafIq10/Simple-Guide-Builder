@@ -773,6 +773,118 @@ paths:
         "204":
           description: Deleted
 
+  # ─── Storage ──────────────────────────────────────────
+  /storage/uploads/request-url:
+    post:
+      tags: [storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /storage/objects/{objectPath}:
+    get:
+      tags: [storage]
+      operationId: getStorageObject
+      summary: Serve a private object entity
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object content streamed
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  # ─── Attachments ──────────────────────────────────────
+  /attachments:
+    get:
+      tags: [attachments]
+      operationId: listAttachments
+      summary: List attachments for a site or asset
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [site, asset]
+        - name: entityId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of attachments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attachment"
+    post:
+      tags: [attachments]
+      operationId: createAttachment
+      summary: Save attachment metadata after upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttachmentInput"
+      responses:
+        "201":
+          description: Attachment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attachment"
+
+  /attachments/{attachmentId}:
+    delete:
+      tags: [attachments]
+      operationId: deleteAttachment
+      summary: Delete an attachment record
+      parameters:
+        - name: attachmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -1494,3 +1606,81 @@ components:
         unitStatus:
           type: string
           enum: [not_started, design_confirmed, equipment_allocated, installation_in_progress, installation_completed, testing_completed, utility_submission_pending, utility_submission_submitted, utility_approval_received, meter_installed, commissioned, handover_pending, handed_over, under_warranty, closed]
+
+    # ─── Storage ──────────────────────────────────────────
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadUrlRequest"
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    # ─── Attachments ──────────────────────────────────────
+    Attachment:
+      type: object
+      required: [id, entityType, entityId, category, fileName, objectPath, createdAt]
+      properties:
+        id:
+          type: integer
+        entityType:
+          type: string
+          enum: [site, asset]
+        entityId:
+          type: integer
+        category:
+          type: string
+          enum: [photo, drawing]
+        fileName:
+          type: string
+        objectPath:
+          type: string
+        mimeType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AttachmentInput:
+      type: object
+      required: [entityType, entityId, category, fileName, objectPath]
+      properties:
+        entityType:
+          type: string
+          enum: [site, asset]
+        entityId:
+          type: integer
+        category:
+          type: string
+          enum: [photo, drawing]
+        fileName:
+          type: string
+          minLength: 1
+        objectPath:
+          type: string
+          minLength: 1
+        mimeType:
+          type: string
