@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BookOpen, MapPin, Zap, HardHat, Home, Server, ChevronRight, Pencil, Trash2, Plus } from "lucide-react";
+import { BookOpen, MapPin, Zap, HardHat, Home, Server, ChevronRight, Pencil, Trash2, Plus, Activity } from "lucide-react";
 
 export default function UserGuide() {
   const [activeSection, setActiveSection] = useState("getting-started");
@@ -26,13 +26,14 @@ export default function UserGuide() {
   };
 
   const sections = [
-    { id: "getting-started",  title: "Getting Started",          icon: BookOpen },
-    { id: "dashboard",        title: "Dashboard & KPIs",         icon: Server   },
-    { id: "asset-registry",   title: "Asset Registry Workflow",  icon: Zap      },
-    { id: "editing-deleting", title: "Editing & Deleting",       icon: Pencil   },
-    { id: "equipment",        title: "Equipment Register",        icon: MapPin   },
-    { id: "work-orders",      title: "Work Orders Lifecycle",     icon: HardHat  },
-    { id: "developer-portal", title: "Housing Developer Portal",  icon: Home     },
+    { id: "getting-started",  title: "Getting Started",          icon: BookOpen  },
+    { id: "dashboard",        title: "Dashboard & KPIs",         icon: Server    },
+    { id: "asset-registry",   title: "Asset Registry Workflow",  icon: Zap       },
+    { id: "editing-deleting", title: "Editing & Deleting",       icon: Pencil    },
+    { id: "equipment",        title: "Equipment Register",        icon: MapPin    },
+    { id: "work-orders",      title: "Work Orders Lifecycle",     icon: HardHat   },
+    { id: "live-monitoring",  title: "Live Monitoring",           icon: Activity  },
+    { id: "developer-portal", title: "Housing Developer Portal",  icon: Home      },
   ];
 
   return (
@@ -71,7 +72,7 @@ export default function UserGuide() {
         <div className="mb-12 border-b border-border pb-8">
           <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">User Guide</h1>
           <p className="text-muted-foreground text-lg">
-            Welcome to the GBJ SolarDAMS Operations Command Centre. This guide covers managing your solar portfolio, asset registries, maintenance workflows, and developer housing projects.
+            Welcome to the GBJ SolarDAMS Operations Command Centre. This guide covers managing your solar portfolio, asset registries, maintenance workflows, live monitoring, and developer housing projects.
           </p>
         </div>
 
@@ -81,7 +82,7 @@ export default function UserGuide() {
             <BookOpen className="size-6" /> Getting Started
           </h2>
           <p>
-            GBJ SolarDAMS is a digital asset management system purpose-built for solar EPC and O&M operators in the Malaysian market. The platform is divided into three core pillars:
+            GBJ SolarDAMS is a digital asset management system purpose-built for solar EPC and O&M operators in the Malaysian market. The platform is divided into four core pillars:
           </p>
           <ul className="space-y-4 my-6 list-none pl-0">
             <li className="bg-muted/30 p-4 rounded-lg border border-border">
@@ -89,6 +90,9 @@ export default function UserGuide() {
             </li>
             <li className="bg-muted/30 p-4 rounded-lg border border-border">
               <strong>Operations:</strong> The central dispatch for managing Work Orders, maintenance schedules, and fault resolutions.
+            </li>
+            <li className="bg-muted/30 p-4 rounded-lg border border-border">
+              <strong>Live Monitoring:</strong> A real-time digital twin dashboard powered by Huawei FusionSolar — showing live power output, daily production curves, monthly and annual energy generation charts per asset.
             </li>
             <li className="bg-muted/30 p-4 rounded-lg border border-border">
               <strong>Housing Developer Portal:</strong> A specialised tracking pipeline for mass housing NEM implementations, tracking hundreds of units through installation and utility approvals.
@@ -172,7 +176,7 @@ export default function UserGuide() {
             <Pencil className="size-6" /> Editing & Deleting Records
           </h2>
           <p>
-            Every record in the Customers, Sites, and PV Assets lists has inline <strong>Edit</strong> and <strong>Delete</strong> actions directly in the table — no need to navigate into the detail page first.
+            Every record in the Customers, Sites, PV Assets, and Work Orders lists has inline <strong>Edit</strong> and <strong>Delete</strong> actions directly in the table — no need to navigate into the detail page first.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
@@ -202,7 +206,7 @@ export default function UserGuide() {
           </div>
 
           <p className="mt-6 text-sm">
-            You can also edit any record from its <strong>detail page</strong> (reached by clicking the record's name or the <em>View</em> button). The detail page provides additional context such as linked assets, equipment registers, and work order history.
+            You can also edit any PV Asset record from its <strong>detail page</strong> (reached by clicking the asset name or the <em>View</em> button). The detail page provides additional context such as linked equipment, attachments, and the Live Monitoring tab.
           </p>
         </section>
 
@@ -217,7 +221,7 @@ export default function UserGuide() {
           <ul className="list-disc pl-6 space-y-2 mb-6">
             <li><strong>Inverters:</strong> Critical for warranty tracking and fault isolation.</li>
             <li><strong>PV Modules:</strong> Track exact models and batch serials.</li>
-            <li><strong>Sensors & Meters:</strong> Necessary for monitoring integration in Phase 2.</li>
+            <li><strong>Sensors & Meters:</strong> Necessary for monitoring integration.</li>
           </ul>
           <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-lg flex gap-3 text-amber-800 dark:text-amber-500">
             <HardHat className="size-5 shrink-0 mt-0.5" />
@@ -250,6 +254,83 @@ export default function UserGuide() {
                 <tr><td className="px-4 py-3 font-bold text-primary">Verified / Closed</td><td className="px-4 py-3">Work confirmed satisfactory. Costs finalised and archived.</td></tr>
               </tbody>
             </table>
+          </div>
+
+          <h3 className="text-lg font-bold mt-8 mb-4">Editing & Deleting Work Orders</h3>
+          <p className="text-sm mb-4">
+            Every row in the Work Orders table has inline <strong>Edit</strong> and <strong>Delete</strong> buttons in the Actions column on the right.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold mb-2 flex items-center gap-2"><Pencil className="size-4 text-primary" /> Edit Work Order</h4>
+              <p className="text-sm">Opens a pre-populated side panel. You can update the <strong>description, type, priority, status, assignee, scheduled date, labour cost, material cost,</strong> and <strong>resolution notes</strong>. The asset cannot be changed after creation. Click <em>Save Changes</em> to apply.</p>
+            </div>
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold mb-2 flex items-center gap-2"><Trash2 className="size-4 text-destructive" /> Delete Work Order</h4>
+              <p className="text-sm">Permanently removes the work order after a confirmation prompt. Use this to clear test records or cancelled jobs that should not appear in history.</p>
+            </div>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg flex gap-3 text-blue-800 dark:text-blue-400">
+            <Activity className="size-5 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <strong>Cost Tracking:</strong> Use the Edit panel to record <strong>Labour Cost</strong> and <strong>Material Cost</strong> (in RM) once the work is complete. These values feed into future cost reporting and are stored against each work order permanently.
+            </div>
+          </div>
+        </section>
+
+        {/* Live Monitoring */}
+        <section id="live-monitoring" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-3 border-b border-border pb-2 mb-6 text-primary">
+            <Activity className="size-6" /> Live Monitoring (Digital Twin)
+          </h2>
+          <p>
+            Each PV Asset can be linked to Huawei FusionSolar to enable real-time performance monitoring. Open any asset's detail page and switch to the <strong>⚡ Live Monitoring</strong> tab.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold text-blue-500 mb-2">Real-time KPIs</h4>
+              <p className="text-sm">Live power output (kW), today's energy yield (kWh), performance ratio (%), and current inverter status refreshed every minute.</p>
+            </div>
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold text-teal-500 mb-2">Daily Power Curve</h4>
+              <p className="text-sm">A 30-day rolling area chart showing daily energy production (kWh/day), useful for spotting underperforming days or soiling events.</p>
+            </div>
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold text-purple-500 mb-2">Monthly Generation</h4>
+              <p className="text-sm">Bar chart of monthly kWh production for the current calendar year, enabling seasonal performance comparison.</p>
+            </div>
+            <div className="border border-border p-4 rounded-lg">
+              <h4 className="font-bold text-amber-500 mb-2">Annual Summary</h4>
+              <p className="text-sm">Multi-year annual generation chart for long-term trend analysis and degradation monitoring.</p>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-bold mt-8 mb-3">Linking an Asset to FusionSolar</h3>
+          <div className="relative border-l-2 border-primary/30 ml-3 pl-6 space-y-6 my-6">
+            <div className="relative">
+              <div className="absolute -left-[35px] top-1 bg-primary text-white size-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-card">1</div>
+              <h4 className="text-base font-bold m-0">Get your FusionSolar Station Code</h4>
+              <p className="text-sm mt-1">Log in to the FusionSolar portal. Navigate to <em>Plant Management</em> → select your plant → copy the <strong>Station Code</strong> from the plant details page.</p>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-[35px] top-1 bg-primary text-white size-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-card">2</div>
+              <h4 className="text-base font-bold m-0">Enter the code in SolarDAMS</h4>
+              <p className="text-sm mt-1">Open the PV Asset's detail page → click <strong>Edit Asset</strong> → scroll to the <em>FusionSolar Station Code</em> field → paste the code → click <em>Save Changes</em>.</p>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-[35px] top-1 bg-primary text-white size-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-card">3</div>
+              <h4 className="text-base font-bold m-0">Switch to Live Monitoring tab</h4>
+              <p className="text-sm mt-1">The <strong>⚡ Live Monitoring</strong> tab will now fetch live data from FusionSolar and display all four KPI cards and charts automatically.</p>
+            </div>
+          </div>
+
+          <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-lg flex gap-3 text-amber-800 dark:text-amber-500 mt-4">
+            <HardHat className="size-5 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <strong>Administrator Note:</strong> FusionSolar API credentials (<em>Username</em> and <em>System Code</em>) must be configured in the server's Secrets panel before the Live Monitoring tab becomes active. Contact your system administrator if the tab shows a "not configured" message.
+            </div>
           </div>
         </section>
 

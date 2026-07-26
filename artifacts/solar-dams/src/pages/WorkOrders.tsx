@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
-import { useListWorkOrders, useListAssets, createWorkOrder, getListWorkOrdersQueryKey } from "@workspace/api-client-react";
+import { useListWorkOrders, useListAssets, createWorkOrder, updateWorkOrder, deleteWorkOrder, getListWorkOrdersQueryKey } from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { HardHat, Plus, Search, Calendar, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
+import { HardHat, Plus, Search, Calendar, Clock, CheckCircle2, ShieldAlert, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SideSheet } from "@/components/ui/side-sheet";
 
@@ -12,6 +12,19 @@ export default function WorkOrders() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const [editingWo, setEditingWo] = useState<any | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteWorkOrder(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: getListWorkOrdersQueryKey() }),
+  });
+
+  const handleDelete = (wo: any) => {
+    if (!window.confirm(`Delete work order ${wo.workOrderNumber}? This cannot be undone.`)) return;
+    deleteMutation.mutate(wo.id);
+  };
 
   const filtered = wos?.filter(wo => {
     if (activeTab === 'active' && ['closed', 'cancelled', 'completed', 'verified'].includes(wo.status)) return false;
@@ -84,6 +97,7 @@ export default function WorkOrders() {
                   <th className="px-6 py-4 font-medium">Priority & Type</th>
                   <th className="px-6 py-4 font-medium">Status</th>
                   <th className="px-6 py-4 font-medium">Assignee</th>
+                  <th className="px-6 py-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -133,6 +147,23 @@ export default function WorkOrders() {
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium">{wo.assignedTo || 'Unassigned'}</div>
                       </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setEditingWo(wo)}
+                            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors font-medium"
+                          >
+                            <Pencil className="size-3" /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(wo)}
+                            disabled={deleteMutation.isPending}
+                            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-red-500/30 bg-red-500/5 text-red-600 hover:bg-red-500/10 transition-colors font-medium disabled:opacity-50"
+                          >
+                            <Trash2 className="size-3" /> Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -143,6 +174,14 @@ export default function WorkOrders() {
       </div>
 
       <CreateWoSheet open={isSheetOpen} onClose={() => setSheetOpen(false)} assets={assets || []} />
+
+      {editingWo && (
+        <EditWoSheet
+          wo={editingWo}
+          assets={assets || []}
+          onClose={() => setEditingWo(null)}
+        />
+      )}
     </div>
   );
 }
@@ -237,6 +276,152 @@ function CreateWoSheet({ open, onClose, assets }: { open: boolean; onClose: () =
         <div className="pt-4 flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={mutation.isPending}>Create Work Order</Button>
+        </div>
+      </form>
+    </SideSheet>
+  );
+}
+
+function EditWoSheet({ wo, assets, onClose }: { wo: any; assets: any[]; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (data: any) => updateWorkOrder(wo.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListWorkOrdersQueryKey() });
+      onClose();
+    },
+  });
+
+  const [formData, setFormData] = useState({
+    assetId: String(wo.assetId ?? ""),
+    type: wo.type ?? "preventive",
+    priority: wo.priority ?? "medium",
+    description: wo.description ?? "",
+    assignedTo: wo.assignedTo ?? "",
+    scheduledDate: wo.scheduledDate ?? "",
+    status: wo.status ?? "draft",
+    labourCost: wo.labourCost != null ? String(wo.labourCost) : "",
+    materialCost: wo.materialCost != null ? String(wo.materialCost) : "",
+    resolution: wo.resolution ?? "",
+  });
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload: any = {
+      type: formData.type,
+      priority: formData.priority,
+      description: formData.description,
+      assignedTo: formData.assignedTo || null,
+      scheduledDate: formData.scheduledDate || null,
+      status: formData.status,
+      resolution: formData.resolution || null,
+    };
+    if (formData.labourCost !== "") payload.labourCost = Number(formData.labourCost);
+    if (formData.materialCost !== "") payload.materialCost = Number(formData.materialCost);
+    mutation.mutate(payload);
+  };
+
+  const ALL_STATUSES = [
+    "draft", "open", "assigned", "scheduled", "in_progress",
+    "awaiting_parts", "awaiting_approval", "completed", "verified", "closed", "cancelled"
+  ];
+
+  return (
+    <SideSheet open={true} onClose={onClose} title={`Edit ${wo.workOrderNumber}`}>
+      <form onSubmit={onSubmit} className="space-y-4">
+
+        {/* Asset (read-only in edit) */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Asset</label>
+          <div className="h-10 px-3 flex items-center rounded-md border border-input bg-muted/30 text-sm text-muted-foreground">
+            {assets.find(a => a.id === wo.assetId)?.assetName ?? `Asset #${wo.assetId}`}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Description <span className="text-red-500">*</span></label>
+          <textarea required className="w-full p-3 rounded-md border border-input bg-background text-sm min-h-[80px] outline-none"
+            value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Type</label>
+            <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+              value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}
+            >
+              <option value="preventive">Preventive</option>
+              <option value="corrective">Corrective</option>
+              <option value="emergency">Emergency</option>
+              <option value="inspection">Inspection</option>
+              <option value="warranty">Warranty</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Priority</label>
+            <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+              value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value as any })}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Status</label>
+          <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+            value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+          >
+            {ALL_STATUSES.map(s => (
+              <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Assignee</label>
+            <input type="text" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+              placeholder="e.g. Ali bin Ahmad"
+              value={formData.assignedTo} onChange={e => setFormData({ ...formData, assignedTo: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Scheduled Date</label>
+            <input type="date" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+              value={formData.scheduledDate} onChange={e => setFormData({ ...formData, scheduledDate: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Labour Cost (RM)</label>
+            <input type="number" min="0" step="0.01" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+              placeholder="0.00"
+              value={formData.labourCost} onChange={e => setFormData({ ...formData, labourCost: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Material Cost (RM)</label>
+            <input type="number" min="0" step="0.01" className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm outline-none"
+              placeholder="0.00"
+              value={formData.materialCost} onChange={e => setFormData({ ...formData, materialCost: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Resolution / Notes</label>
+          <textarea className="w-full p-3 rounded-md border border-input bg-background text-sm min-h-[80px] outline-none"
+            placeholder="Describe the work carried out or resolution reached..."
+            value={formData.resolution} onChange={e => setFormData({ ...formData, resolution: e.target.value })} />
+        </div>
+
+        <div className="pt-4 flex gap-2 justify-end">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </form>
     </SideSheet>
