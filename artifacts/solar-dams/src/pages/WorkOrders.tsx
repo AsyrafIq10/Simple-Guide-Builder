@@ -92,6 +92,7 @@ export default function WorkOrders() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/20 border-b border-border">
                 <tr>
+                  <th className="px-4 py-4 font-medium w-10 text-center">#</th>
                   <th className="px-6 py-4 font-medium">WO Number</th>
                   <th className="px-6 py-4 font-medium">Description / Asset</th>
                   <th className="px-6 py-4 font-medium">Priority & Type</th>
@@ -101,10 +102,11 @@ export default function WorkOrders() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map((wo) => {
+                {filtered.map((wo, idx) => {
                   const asset = assets?.find(a => a.id === wo.assetId);
                   return (
                     <tr key={wo.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-4 text-center text-xs font-mono text-muted-foreground">{idx + 1}</td>
                       <td className="px-6 py-4">
                         <div className="font-bold font-mono text-foreground">{wo.workOrderNumber}</div>
                         <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1">

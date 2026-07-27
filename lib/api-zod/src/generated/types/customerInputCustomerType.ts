@@ -14,4 +14,5 @@ export const CustomerInputCustomerType = {
   commercial: 'commercial',
   industrial: 'industrial',
   government: 'government',
+  individual: 'individual',
 } as const;

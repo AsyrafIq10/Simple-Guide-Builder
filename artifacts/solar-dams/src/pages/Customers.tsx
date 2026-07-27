@@ -77,6 +77,7 @@ export default function Customers() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/20 border-b border-border">
                 <tr>
+                  <th className="px-4 py-4 font-medium w-10 text-center">#</th>
                   <th className="px-6 py-4 font-medium">Name</th>
                   <th className="px-6 py-4 font-medium">Type</th>
                   <th className="px-6 py-4 font-medium">Contact</th>
@@ -84,8 +85,9 @@ export default function Customers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map((customer) => (
+                {filtered.map((customer, idx) => (
                   <tr key={customer.id} className="hover:bg-muted/30 transition-colors group">
+                    <td className="px-4 py-4 text-center text-xs font-mono text-muted-foreground">{idx + 1}</td>
                     <td className="px-6 py-4">
                       <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
                         <Link href={`/customers/${customer.id}`}>{customer.name}</Link>
@@ -215,6 +217,7 @@ function CustomerSheet(
             <option value="residential">Residential</option>
             <option value="industrial">Industrial</option>
             <option value="government">Government</option>
+            <option value="individual">Individual</option>
           </select>
         </div>
         <div className="space-y-2">
