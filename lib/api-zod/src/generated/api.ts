@@ -94,7 +94,7 @@ export const GetWarrantyExpiringResponse = zod.array(GetWarrantyExpiringResponse
  */
 export const ListCustomersResponseItem = zod.object({
   "id": zod.number(),
-  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government']),
+  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government', 'individual']),
   "name": zod.string(),
   "identityOrRegistrationNumber": zod.string().nullish(),
   "email": zod.string(),
@@ -114,7 +114,7 @@ export const ListCustomersResponse = zod.array(ListCustomersResponseItem)
 
 
 export const CreateCustomerBody = zod.object({
-  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government']),
+  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government', 'individual']),
   "name": zod.string().min(1),
   "identityOrRegistrationNumber": zod.string().optional(),
   "email": zod.string(),
@@ -125,7 +125,7 @@ export const CreateCustomerBody = zod.object({
 
 export const CreateCustomerResponse = zod.object({
   "id": zod.number(),
-  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government']),
+  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government', 'individual']),
   "name": zod.string(),
   "identityOrRegistrationNumber": zod.string().nullish(),
   "email": zod.string(),
@@ -146,7 +146,7 @@ export const GetCustomerParams = zod.object({
 
 export const GetCustomerResponse = zod.object({
   "id": zod.number(),
-  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government']),
+  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government', 'individual']),
   "name": zod.string(),
   "identityOrRegistrationNumber": zod.string().nullish(),
   "email": zod.string(),
@@ -166,7 +166,7 @@ export const UpdateCustomerParams = zod.object({
 })
 
 export const UpdateCustomerBody = zod.object({
-  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government']).optional(),
+  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government', 'individual']).optional(),
   "name": zod.string().optional(),
   "identityOrRegistrationNumber": zod.string().optional(),
   "email": zod.string().optional(),
@@ -177,7 +177,7 @@ export const UpdateCustomerBody = zod.object({
 
 export const UpdateCustomerResponse = zod.object({
   "id": zod.number(),
-  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government']),
+  "customerType": zod.enum(['residential', 'commercial', 'industrial', 'government', 'individual']),
   "name": zod.string(),
   "identityOrRegistrationNumber": zod.string().nullish(),
   "email": zod.string(),

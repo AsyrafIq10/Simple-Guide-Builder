@@ -33,6 +33,7 @@ export const CustomerCustomerType = {
   commercial: 'commercial',
   industrial: 'industrial',
   government: 'government',
+  individual: 'individual',
 } as const;
 
 export interface Customer {
@@ -61,6 +62,7 @@ export const CustomerInputCustomerType = {
   commercial: 'commercial',
   industrial: 'industrial',
   government: 'government',
+  individual: 'individual',
 } as const;
 
 export interface CustomerInput {
@@ -82,6 +84,7 @@ export const CustomerUpdateCustomerType = {
   commercial: 'commercial',
   industrial: 'industrial',
   government: 'government',
+  individual: 'individual',
 } as const;
 
 export interface CustomerUpdate {

@@ -1052,7 +1052,7 @@ components:
           type: integer
         customerType:
           type: string
-          enum: [residential, commercial, industrial, government]
+          enum: [residential, commercial, industrial, government, individual]
         name:
           type: string
         identityOrRegistrationNumber:
@@ -1076,7 +1076,7 @@ components:
       properties:
         customerType:
           type: string
-          enum: [residential, commercial, industrial, government]
+          enum: [residential, commercial, industrial, government, individual]
         name:
           type: string
           minLength: 1
@@ -1096,7 +1096,7 @@ components:
       properties:
         customerType:
           type: string
-          enum: [residential, commercial, industrial, government]
+          enum: [residential, commercial, industrial, government, individual]
         name:
           type: string
         identityOrRegistrationNumber:

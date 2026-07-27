@@ -28,9 +28,10 @@ export default function Dashboard() {
   }
 
   const kpis = [
+    { label: "Total Customers", value: summary?.totalCustomers || 0, icon: Users, color: "text-purple-500", href: "/customers" },
+    { label: "Total Sites", value: summary?.totalSites || 0, icon: MapPin, color: "text-teal-500", href: "/sites" },
     { label: "Total PV Assets", value: summary?.totalAssets || 0, icon: Zap, color: "text-blue-500", href: "/assets" },
     { label: "Installed Capacity", value: `${(summary?.totalInstalledKwp || 0).toLocaleString()} kWp`, icon: Activity, color: "text-amber-500", href: "/assets" },
-    { label: "Total Sites", value: summary?.totalSites || 0, icon: MapPin, color: "text-teal-500", href: "/sites" },
     { label: "Open Work Orders", value: summary?.openWorkOrders || 0, icon: HardHat, color: "text-red-500", href: "/work-orders" },
   ];
 
@@ -41,7 +42,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground text-sm">Portfolio overview and operational alerts.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map((kpi, idx) => (
           <Card key={idx} className="border-border shadow-sm">
             <CardContent className="p-6 flex items-center justify-between">

@@ -14,4 +14,5 @@ export const CustomerUpdateCustomerType = {
   commercial: 'commercial',
   industrial: 'industrial',
   government: 'government',
+  individual: 'individual',
 } as const;
