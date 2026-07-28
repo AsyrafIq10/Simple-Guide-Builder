@@ -141,22 +141,23 @@ async function callApi(path: string, body: Record<string, unknown>): Promise<unk
 
   let res = await makeRequest(sess);
 
-  // HTTP-level session expiry — re-login once
-  if (res.status === 305 || res.status === 401) {
-    _session = null;
-    sess = await getSession();
-    res = await makeRequest(sess);
-  }
-
   if (!res.ok) {
     throw new FusionSolarError("API_ERROR", `FusionSolar API HTTP ${res.status} on /${path}`);
   }
 
   const json = await res.json() as { success: boolean; data?: unknown; failCode?: number; message?: string };
   if (!json.success) {
-    // failCode 305 = session expired in response body — re-login once
+    // failCode 305 = session expired/invalidated — retry ONCE with a fresh session.
+    //
+    // Race-safe invalidation: only null _session if it still holds the session WE used.
+    // Blindly setting _session = null causes a competing-login cascade — each of the 4
+    // concurrent monitoring requests (realtime/daily/monthly/annual) would spawn its own
+    // re-login, and every new login kills the previous one on FusionSolar (one active
+    // session per account). The reference-equality check prevents that: if a concurrent
+    // caller already refreshed _session we attach to it for free via the _loginInFlight
+    // deduplication in getSession() instead of spawning yet another competing login.
     if (json.failCode === 305) {
-      _session = null;
+      if (_session === sess) _session = null;
       sess = await getSession();
       const retry = await makeRequest(sess);
       const retryJson = await retry.json() as typeof json;
