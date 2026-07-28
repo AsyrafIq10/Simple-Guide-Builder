@@ -24,7 +24,7 @@ const toDto = (r: typeof sitesTable.$inferSelect) => ({
 });
 
 router.get("/sites", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(sitesTable).orderBy(sitesTable.createdAt);
+  const rows = await db.select().from(sitesTable).orderBy(sitesTable.siteCode);
   res.json(ListSitesResponse.parse(rows.map(toDto)));
 });
 

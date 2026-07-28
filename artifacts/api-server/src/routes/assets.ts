@@ -25,7 +25,7 @@ const toDto = (r: typeof pvAssetsTable.$inferSelect) => ({
 });
 
 router.get("/assets", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(pvAssetsTable).orderBy(pvAssetsTable.createdAt);
+  const rows = await db.select().from(pvAssetsTable).orderBy(pvAssetsTable.assetCode);
   res.json(ListAssetsResponse.parse(rows.map(toDto)));
 });
 
