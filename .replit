@@ -26,3 +26,5 @@ channel = "stable-25_05"
 
 [userenv.shared]
 FUSIONSOLAR_BASE_URL = "https://sg5.fusionsolar.huawei.com"
+USIONSOLAR_USERNAME = "Iqbal10"
+FUSIONSOLAR_SYSTEM_CODE = "Iqbal21@"
