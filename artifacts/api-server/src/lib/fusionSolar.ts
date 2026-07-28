@@ -107,11 +107,20 @@ async function doLogin(): Promise<Session> {
 async function getSession(): Promise<Session> {
   const now = Date.now();
   if (_session && _session.expiresAt > now + 90_000) return _session;
-  if (!_loginInFlight) {
-    _loginInFlight = doLogin().finally(() => { _loginInFlight = null; });
+  // Respect login rate-limit backoff — fail fast instead of hammering the endpoint
+  if (_loginBackoffUntil > now) {
+    const waitSec = Math.ceil((_loginBackoffUntil - now) / 1000);
+    throw new FusionSolarError(
+      "LOGIN_FAILED",
+      `FusionSolar login rate-limited — please wait ${waitSec} second(s) and retry.`
+    );
   }
-  _session = await _loginInFlight;
-  return _session;
+  if (!_loginInFlight) {
+    _loginInFlight = doLogin()
+      .then(s => { _session = s; return s; })
+      .finally(() => { _loginInFlight = null; });
+  }
+  return _loginInFlight;
 }
 
 // ─── Core API call ────────────────────────────────────────────────────────────
