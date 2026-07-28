@@ -34,14 +34,16 @@ export class FusionSolarError extends Error {
 // ─── Session management ───────────────────────────────────────────────────────
 
 interface Session {
-  token: string;
-  expiresAt: number; // ms epoch
+  xsrfToken: string;   // value of XSRF-TOKEN cookie (also sent as roarand header)
+  cookieHeader: string; // full Cookie header to forward on every API call
+  expiresAt: number;   // ms epoch
 }
 
 let _session: Session | null = null;
-let _loginInFlight: Promise<string> | null = null;
+let _loginInFlight: Promise<Session> | null = null;
+let _loginBackoffUntil = 0; // epoch ms — don't attempt login before this time
 
-async function doLogin(): Promise<string> {
+async function doLogin(): Promise<Session> {
   const username = process.env.FUSIONSOLAR_USERNAME;
   const systemCode = process.env.FUSIONSOLAR_SYSTEM_CODE;
   if (!username || !systemCode) {
@@ -71,59 +73,70 @@ async function doLogin(): Promise<string> {
 
   const body = await res.json() as { success: boolean; failCode?: number; message?: string };
   if (!body.success) {
+    // 407 = too many login attempts — back off for 90 s before allowing retry
+    if (body.failCode === 407) {
+      _loginBackoffUntil = Date.now() + 90_000;
+      throw new FusionSolarError(
+        "LOGIN_FAILED",
+        "FusionSolar login rate-limited — too many attempts. Please wait 90 seconds and retry."
+      );
+    }
     throw new FusionSolarError(
       "LOGIN_FAILED",
       `FusionSolar login failed (code ${body.failCode}): ${body.message ?? "invalid credentials"}`
     );
   }
 
-  // The XSRF-TOKEN is in the Set-Cookie header
-  const setCookie = res.headers.get("set-cookie") || "";
-  const match = setCookie.match(/XSRF-TOKEN=([^;,\s]+)/);
-  if (!match?.[1]) {
+  // Collect ALL Set-Cookie values — FusionSolar requires the full cookie jar
+  // (XSRF-TOKEN for CSRF, plus a session cookie like fdbe3654-... for authentication)
+  const rawHeaders = res.headers.getSetCookie?.() ?? [];
+  const cookieParts: string[] = rawHeaders.length > 0
+    ? rawHeaders.map(c => c.split(";")[0].trim())
+    : (res.headers.get("set-cookie") ?? "").split(",").map(c => c.split(";")[0].trim()).filter(Boolean);
+
+  const xsrfPart = cookieParts.find(p => p.startsWith("XSRF-TOKEN="));
+  if (!xsrfPart) {
     throw new FusionSolarError("LOGIN_FAILED", "FusionSolar login did not return XSRF-TOKEN cookie");
   }
+  const xsrfToken = xsrfPart.split("=").slice(1).join("=");
+  const cookieHeader = cookieParts.join("; ");
 
-  return match[1];
+  return { xsrfToken, cookieHeader, expiresAt: Date.now() + 28 * 60_000 };
 }
 
-async function getToken(): Promise<string> {
+async function getSession(): Promise<Session> {
   const now = Date.now();
-  if (_session && _session.expiresAt > now + 90_000) {
-    return _session.token;
-  }
-  // Deduplicate concurrent login requests
+  if (_session && _session.expiresAt > now + 90_000) return _session;
   if (!_loginInFlight) {
     _loginInFlight = doLogin().finally(() => { _loginInFlight = null; });
   }
-  const token = await _loginInFlight;
-  _session = { token, expiresAt: now + 28 * 60_000 }; // 28-min TTL (portal expires at 30)
-  return token;
+  _session = await _loginInFlight;
+  return _session;
 }
 
 // ─── Core API call ────────────────────────────────────────────────────────────
 
 async function callApi(path: string, body: Record<string, unknown>): Promise<unknown> {
-  let token = await getToken();
+  let sess = await getSession();
 
-  const makeRequest = (tok: string) =>
+  const makeRequest = (s: Session) =>
     fetch(`${BASE_URL}/thirdData/${path}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cookie": `XSRF-TOKEN=${tok}`,
-        "roarand": tok, // FusionSolar requires token in both cookie AND this header
+        "Cookie": s.cookieHeader,   // full cookie jar (session + XSRF)
+        "roarand": s.xsrfToken,     // CSRF header FusionSolar requires
       },
       body: JSON.stringify(body),
     });
 
-  let res = await makeRequest(token);
+  let res = await makeRequest(sess);
 
-  // Session expired mid-request — re-login once
+  // HTTP-level session expiry — re-login once
   if (res.status === 305 || res.status === 401) {
     _session = null;
-    token = await getToken();
-    res = await makeRequest(token);
+    sess = await getSession();
+    res = await makeRequest(sess);
   }
 
   if (!res.ok) {
@@ -132,11 +145,11 @@ async function callApi(path: string, body: Record<string, unknown>): Promise<unk
 
   const json = await res.json() as { success: boolean; data?: unknown; failCode?: number; message?: string };
   if (!json.success) {
-    // failCode 305 = session expired
+    // failCode 305 = session expired in response body — re-login once
     if (json.failCode === 305) {
       _session = null;
-      token = await getToken();
-      const retry = await makeRequest(token);
+      sess = await getSession();
+      const retry = await makeRequest(sess);
       const retryJson = await retry.json() as typeof json;
       if (!retryJson.success) {
         throw new FusionSolarError(
