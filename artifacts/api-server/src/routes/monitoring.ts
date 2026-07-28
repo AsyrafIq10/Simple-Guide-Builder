@@ -2,8 +2,49 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, pvAssetsTable } from "@workspace/db";
 import * as fs from "../lib/fusionSolar.js";
+import { FusionSolarError } from "../lib/fusionSolar.js";
 
 const router: IRouter = Router();
+
+// Map typed FusionSolar errors to friendly HTTP responses
+function handleFusionSolarError(e: unknown, res: any): void {
+  if (e instanceof FusionSolarError) {
+    switch (e.code) {
+      case "CREDENTIALS_MISSING":
+        res.status(503).json({
+          error: "FusionSolar credentials not configured — contact your system administrator",
+          code: e.code,
+        });
+        return;
+      case "LOGIN_FAILED":
+        res.status(502).json({
+          error: "FusionSolar login failed — check your Northbound API credentials",
+          code: e.code,
+        });
+        return;
+      case "STATION_NOT_FOUND":
+        res.status(502).json({
+          error: "Station code not found in FusionSolar — verify the code in FusionSolar → Plant List",
+          code: e.code,
+        });
+        return;
+      case "DEVICE_NOT_FOUND":
+        res.status(502).json({
+          error: "No inverter found for this station — ensure the device is registered in FusionSolar",
+          code: e.code,
+        });
+        return;
+      default:
+        res.status(502).json({
+          error: `FusionSolar API error — ${e.message}`,
+          code: e.code,
+        });
+        return;
+    }
+  }
+  // Unknown error
+  res.status(502).json({ error: "Unexpected monitoring error — please try again", code: "API_ERROR" });
+}
 
 async function resolveStationCode(assetId: number): Promise<string | null> {
   const [asset] = await db
@@ -25,8 +66,8 @@ router.get("/monitoring/:assetId/realtime", async (req, res): Promise<void> => {
 
   try {
     res.json(await fs.getRealtime(stationCode));
-  } catch (e: any) {
-    res.status(502).json({ error: e.message });
+  } catch (e) {
+    handleFusionSolarError(e, res);
   }
 });
 
@@ -47,8 +88,8 @@ router.get("/monitoring/:assetId/daily", async (req, res): Promise<void> => {
 
   try {
     res.json(await fs.getDaily(stationCode, date));
-  } catch (e: any) {
-    res.status(502).json({ error: e.message });
+  } catch (e) {
+    handleFusionSolarError(e, res);
   }
 });
 
@@ -68,8 +109,8 @@ router.get("/monitoring/:assetId/monthly", async (req, res): Promise<void> => {
 
   try {
     res.json(await fs.getMonthly(stationCode, year, month));
-  } catch (e: any) {
-    res.status(502).json({ error: e.message });
+  } catch (e) {
+    handleFusionSolarError(e, res);
   }
 });
 
@@ -87,8 +128,8 @@ router.get("/monitoring/:assetId/annual", async (req, res): Promise<void> => {
 
   try {
     res.json(await fs.getAnnual(stationCode, year));
-  } catch (e: any) {
-    res.status(502).json({ error: e.message });
+  } catch (e) {
+    handleFusionSolarError(e, res);
   }
 });
 

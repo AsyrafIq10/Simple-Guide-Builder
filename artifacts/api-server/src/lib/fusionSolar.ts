@@ -7,11 +7,29 @@
  * Environment variables required:
  *   FUSIONSOLAR_USERNAME    – portal username
  *   FUSIONSOLAR_SYSTEM_CODE – system code (API password)
- *   FUSIONSOLAR_BASE_URL    – e.g. https://sg5.fusionsolar.huawei.com (defaults to sg5)
+ *   FUSIONSOLAR_BASE_URL    – e.g. https://intl.fusionsolar.huawei.com (defaults to sg5)
  */
 
 const BASE_URL =
   (process.env.FUSIONSOLAR_BASE_URL || "https://sg5.fusionsolar.huawei.com").replace(/\/$/, "");
+
+// ─── Typed error class ────────────────────────────────────────────────────────
+
+export type FusionSolarErrorCode =
+  | "CREDENTIALS_MISSING"
+  | "LOGIN_FAILED"
+  | "STATION_NOT_FOUND"
+  | "DEVICE_NOT_FOUND"
+  | "API_ERROR";
+
+export class FusionSolarError extends Error {
+  code: FusionSolarErrorCode;
+  constructor(code: FusionSolarErrorCode, message: string) {
+    super(message);
+    this.name = "FusionSolarError";
+    this.code = code;
+  }
+}
 
 // ─── Session management ───────────────────────────────────────────────────────
 
@@ -27,29 +45,43 @@ async function doLogin(): Promise<string> {
   const username = process.env.FUSIONSOLAR_USERNAME;
   const systemCode = process.env.FUSIONSOLAR_SYSTEM_CODE;
   if (!username || !systemCode) {
-    throw new Error("FUSIONSOLAR_USERNAME and FUSIONSOLAR_SYSTEM_CODE must be set");
+    throw new FusionSolarError(
+      "CREDENTIALS_MISSING",
+      "FUSIONSOLAR_USERNAME and FUSIONSOLAR_SYSTEM_CODE must be set"
+    );
   }
 
-  const res = await fetch(`${BASE_URL}/thirdData/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userName: username, systemCode }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/thirdData/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userName: username, systemCode }),
+    });
+  } catch (e: any) {
+    throw new FusionSolarError("LOGIN_FAILED", `Cannot reach FusionSolar server: ${e.message}`);
+  }
 
   if (!res.ok) {
-    throw new Error(`FusionSolar login HTTP error: ${res.status} ${res.statusText}`);
+    throw new FusionSolarError(
+      "LOGIN_FAILED",
+      `FusionSolar login HTTP error: ${res.status} ${res.statusText}`
+    );
   }
 
   const body = await res.json() as { success: boolean; failCode?: number; message?: string };
   if (!body.success) {
-    throw new Error(`FusionSolar login failed: code=${body.failCode} ${body.message ?? ""}`);
+    throw new FusionSolarError(
+      "LOGIN_FAILED",
+      `FusionSolar login failed (code ${body.failCode}): ${body.message ?? "invalid credentials"}`
+    );
   }
 
   // The XSRF-TOKEN is in the Set-Cookie header
   const setCookie = res.headers.get("set-cookie") || "";
   const match = setCookie.match(/XSRF-TOKEN=([^;,\s]+)/);
   if (!match?.[1]) {
-    throw new Error("FusionSolar login did not return XSRF-TOKEN cookie");
+    throw new FusionSolarError("LOGIN_FAILED", "FusionSolar login did not return XSRF-TOKEN cookie");
   }
 
   return match[1];
@@ -95,7 +127,7 @@ async function callApi(path: string, body: Record<string, unknown>): Promise<unk
   }
 
   if (!res.ok) {
-    throw new Error(`FusionSolar API HTTP ${res.status} on /${path}`);
+    throw new FusionSolarError("API_ERROR", `FusionSolar API HTTP ${res.status} on /${path}`);
   }
 
   const json = await res.json() as { success: boolean; data?: unknown; failCode?: number; message?: string };
@@ -107,11 +139,17 @@ async function callApi(path: string, body: Record<string, unknown>): Promise<unk
       const retry = await makeRequest(token);
       const retryJson = await retry.json() as typeof json;
       if (!retryJson.success) {
-        throw new Error(`FusionSolar /${path} error after re-login: ${retryJson.failCode} ${retryJson.message ?? ""}`);
+        throw new FusionSolarError(
+          "API_ERROR",
+          `FusionSolar /${path} error after re-login: ${retryJson.failCode} ${retryJson.message ?? ""}`
+        );
       }
       return retryJson.data;
     }
-    throw new Error(`FusionSolar /${path} error: code=${json.failCode} ${json.message ?? ""}`);
+    throw new FusionSolarError(
+      "API_ERROR",
+      `FusionSolar /${path} error: code=${json.failCode} ${json.message ?? ""}`
+    );
   }
 
   return json.data;
@@ -130,12 +168,30 @@ async function getInverterDevId(stationCode: string): Promise<string> {
   const cached = _devCache.get(stationCode);
   if (cached && cached.expiresAt > now) return cached.devId;
 
-  const data = await callApi("getDevList", { stationCodes: stationCode }) as unknown[];
+  let data: unknown;
+  try {
+    data = await callApi("getDevList", { stationCodes: stationCode });
+  } catch (e) {
+    // Re-throw typed errors as-is; wrap unknown errors
+    if (e instanceof FusionSolarError) throw e;
+    throw new FusionSolarError("API_ERROR", `Failed to fetch device list: ${(e as Error).message}`);
+  }
+
   const list = Array.isArray(data) ? data : [];
+  if (list.length === 0) {
+    throw new FusionSolarError(
+      "STATION_NOT_FOUND",
+      `Station code "${stationCode}" was not found in FusionSolar — verify it in FusionSolar → Plant List`
+    );
+  }
+
   // devTypeId 1 = string inverter (most common for residential/SME)
   const inverter = list.find((d: any) => d.devTypeId === 1) as any;
   if (!inverter) {
-    throw new Error(`No string inverter (devTypeId=1) found for station ${stationCode}`);
+    throw new FusionSolarError(
+      "DEVICE_NOT_FOUND",
+      `No string inverter (devTypeId=1) found for station "${stationCode}" — ensure the inverter is registered in FusionSolar`
+    );
   }
   const devId = String(inverter.id);
   _devCache.set(stationCode, { devId, expiresAt: now + 24 * 3_600_000 });

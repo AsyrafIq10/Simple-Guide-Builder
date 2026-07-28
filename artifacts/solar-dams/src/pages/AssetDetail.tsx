@@ -219,26 +219,39 @@ function MonitoringTab({ assetId, fusionSolarStationCode }: {
 
   const base = `/api/monitoring/${assetId}`;
 
+  // Typed fetch helper — attaches API error `code` to thrown errors
+  async function apiFetch(url: string) {
+    const r = await fetch(url);
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      const err: any = new Error(body.error ?? "Monitoring request failed");
+      err.code = body.code ?? "API_ERROR";
+      err.status = r.status;
+      throw err;
+    }
+    return r.json();
+  }
+
   const rtQ = useQuery({
     queryKey: ["monitoring", assetId, "realtime"],
-    queryFn: async () => { const r = await fetch(`${base}/realtime`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    queryFn: () => apiFetch(`${base}/realtime`),
     enabled: !!fusionSolarStationCode,
     refetchInterval: 60_000,
     retry: 1,
   });
   const dayQ = useQuery({
     queryKey: ["monitoring", assetId, "daily", selDate],
-    queryFn: async () => { const r = await fetch(`${base}/daily?date=${selDate}`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    queryFn: () => apiFetch(`${base}/daily?date=${selDate}`),
     enabled: !!fusionSolarStationCode,
   });
   const monQ = useQuery({
     queryKey: ["monitoring", assetId, "monthly", selYear, selMonth],
-    queryFn: async () => { const r = await fetch(`${base}/monthly?year=${selYear}&month=${selMonth}`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    queryFn: () => apiFetch(`${base}/monthly?year=${selYear}&month=${selMonth}`),
     enabled: !!fusionSolarStationCode,
   });
   const annQ = useQuery({
     queryKey: ["monitoring", assetId, "annual", annYear],
-    queryFn: async () => { const r = await fetch(`${base}/annual?year=${annYear}`); if (!r.ok) throw new Error((await r.json()).error); return r.json(); },
+    queryFn: () => apiFetch(`${base}/annual?year=${annYear}`),
     enabled: !!fusionSolarStationCode,
   });
 
@@ -259,6 +272,32 @@ function MonitoringTab({ assetId, fusionSolarStationCode }: {
     );
   }
 
+  // Config-level errors — show a centred panel instead of inline badge
+  const rtErr = rtQ.error as any;
+  const configCodes = ["CREDENTIALS_MISSING", "LOGIN_FAILED", "STATION_NOT_FOUND", "DEVICE_NOT_FOUND"];
+  if (rtQ.isError && configCodes.includes(rtErr?.code)) {
+    const isCredentials = rtErr?.code === "CREDENTIALS_MISSING" || rtErr?.code === "LOGIN_FAILED";
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className={`size-16 rounded-2xl flex items-center justify-center mb-5 border ${
+          isCredentials ? "bg-amber-50 border-amber-100" : "bg-red-50 border-red-100"
+        }`}>
+          <AlertCircle className={`size-8 ${isCredentials ? "text-amber-400" : "text-red-400"}`} />
+        </div>
+        <h3 className="font-semibold text-gray-900 mb-2">
+          {isCredentials ? "FusionSolar Not Connected" : "Station Not Found"}
+        </h3>
+        <p className="text-sm text-muted-foreground max-w-sm">{rtErr.message}</p>
+        <button
+          onClick={() => rtQ.refetch()}
+          className="mt-5 text-xs text-primary hover:underline flex items-center gap-1"
+        >
+          <RefreshCw className="size-3" /> Retry
+        </button>
+      </div>
+    );
+  }
+
   const rt = rtQ.data;
   const statusStyle = STATUS_STYLE[rt?.status ?? "unknown"];
 
@@ -271,7 +310,7 @@ function MonitoringTab({ assetId, fusionSolarStationCode }: {
             <span className="text-xs text-muted-foreground animate-pulse">Connecting to FusionSolar…</span>
           ) : rtQ.isError ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
-              <AlertCircle className="size-3" /> {(rtQ.error as Error).message}
+              <AlertCircle className="size-3" /> {rtErr?.message ?? "Connection error"}
             </span>
           ) : (
             <>
