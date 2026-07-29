@@ -91,7 +91,7 @@ export class ObjectStorageService {
   async downloadObject(
     file: File,
     cacheTtlSec: number = 3600,
-  ): Promise<Response> {
+  ): Promise<globalThis.Response> {
     const [metadata] = await file.getMetadata();
     const aclPolicy = await getObjectAclPolicy(file);
     const isPublic = aclPolicy?.visibility === 'public';
@@ -108,7 +108,7 @@ export class ObjectStorageService {
       headers['Content-Length'] = String(metadata.size);
     }
 
-    return new Response(webStream, { headers });
+    return new globalThis.Response(webStream, { headers });
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
