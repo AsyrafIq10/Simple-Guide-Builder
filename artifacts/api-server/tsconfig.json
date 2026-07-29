@@ -4,6 +4,8 @@
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo",
     "outDir": "dist",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "types": ["node"]
   },
   "include": ["src", "api"],
